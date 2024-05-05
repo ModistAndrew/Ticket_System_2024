@@ -15,6 +15,7 @@ template<class T, class INFO, int CACHE_SIZE = 10>
 //a simple file storage class without cache
 class FileStorage {
   fstream file;
+  string fileName;
   static constexpr int T_SIZE = sizeof(T);
   static constexpr int INFO_LEN = sizeof(INFO);
   static constexpr int INT_SIZE = sizeof(int);
@@ -37,7 +38,6 @@ class FileStorage {
   std::map<int, container> cacheMap; //a map from index to cache
   std::list<int> cacheList; //a list to store the order of cache
   std::map<int, std::list<int>::iterator> cacheIter; //a map from index to iterator of cacheList
-  INFO info;
   int empty;
 
   int getEmpty() {
@@ -50,15 +50,10 @@ class FileStorage {
   //store pointer to first empty just after info len.
   //empty except end has pointer to next empty; check EOF to determine whether at end. (so don't store anything after this)
 public:
-  string fileName;
+  INFO info;
 
-  FileStorage() = default;
-
-  explicit FileStorage(const string &file_name) : fileName("storage/" + file_name + ".dat") {
-  }
-
-  void init() {
-    newFile();
+  FileStorage(const INFO& initInfo, const string &file_name) : fileName("storage/" + file_name + ".dat") {
+    newFile(initInfo);
     file.open(fileName, std::ios::in | std::ios::out | std::ios::binary);
     file.read(reinterpret_cast<char *>(&info), INFO_LEN);
     file.read(reinterpret_cast<char *>(&empty), INT_SIZE);
@@ -78,21 +73,16 @@ public:
     file.close();
   }
 
-  void newFile() {
+  void newFile(const INFO& initInfo) {
     if (std::filesystem::exists(fileName)) {
       return;
     }
     std::filesystem::create_directory("storage");
     file.open(fileName, std::ios::out | std::ios::binary);
-    INFO initInfo;
     int initEmpty = INFO_LEN + INT_SIZE;
     file.write(reinterpret_cast<const char *>(&initInfo), INFO_LEN);
     file.write(reinterpret_cast<const char *>(&initEmpty), INT_SIZE);
     file.close();
-  }
-
-  INFO& getInfo() {
-    return info;
   }
 
   //find an empty place to add T and return the index of the object
@@ -115,7 +105,7 @@ public:
   //make sure the index is valid
   //return the object at index
   //set dirty to true if you want to store the object back to file
-  //the return value is a pointer to the object in cache, which will be invalid after the cache is destroyed. so don't store it.
+  //the return value is a pointer to the object in cache. Shouldn't be stored for long.
   T *get(int index, bool dirty) {
     if (cacheMap.find(index) != cacheMap.end()) {
       cacheList.erase(cacheIter[index]);
@@ -127,16 +117,16 @@ public:
       return c.data;
     }
     if (cacheMap.size() >= CACHE_SIZE) {
-      int idx = cacheList.front();
+      int removeIndex = cacheList.front();
       cacheList.pop_front();
-      cacheIter.erase(idx);
-      container& c = cacheMap[index];
+      cacheIter.erase(removeIndex);
+      container& c = cacheMap[removeIndex];
       if(c.dirty) {
-        file.seekp(idx);
+        file.seekp(removeIndex);
         file.write(reinterpret_cast<const char *>(c.data), T_SIZE);
       }
       free(c.data);
-      cacheMap.erase(idx);
+      cacheMap.erase(removeIndex);
     }
     container &c = cacheMap[index];
     c = container(this, index);
@@ -168,66 +158,3 @@ public:
   }
 };
 #endif //BPT_FILE_STORAGE_HPP
-
-#ifndef BPT_MEMORYRIVER_HPP
-#define BPT_MEMORYRIVER_HPP
-
-#include <fstream>
-
-using std::string;
-using std::fstream;
-using std::ifstream;
-using std::ofstream;
-
-template<class T, int info_len = 2>
-class MemoryRiver {
-  FileStorage<T, int[info_len]> file;
-public:
-  MemoryRiver() = default;
-
-  MemoryRiver(const string& file_name) : file(file_name) {
-  }
-
-  void initialise(string FN = "") {
-    if (FN != "") {
-      file.fileName = FN;
-    }
-    file.init();
-    for(int i = 0; i < info_len; i++) {
-      file.getInfo()[i] = 0;
-    }
-  }
-
-  //读出第n个int的值赋给tmp，1_base
-  void get_info(int &tmp, int n) {
-    if (n > info_len) return;
-    tmp = file.getInfo()[n - 1];
-  }
-
-  //将tmp写入第n个int的位置，1_base
-  void write_info(int tmp, int n) {
-    if (n > info_len) return;
-    file.getInfo()[n - 1] = tmp;
-  }
-
-  int write(T &t) {
-    return file.add(t);
-  }
-
-  void update(T &t, const int index) {
-    *file.get(index, true) = t;
-  }
-
-  //读出位置索引index对应的T对象的值并赋值给t，保证调用的index都是由write函数产生
-  void read(T &t, const int index) {
-    t = *file.get(index, false);
-  }
-
-  //删除位置索引index对应的对象(不涉及空间回收时，可忽略此函数)，保证调用的index都是由write函数产生
-  void Delete(int index) {
-    file.remove(index);
-  }
-};
-
-
-#endif //BPT_MEMORYRIVER_HPP

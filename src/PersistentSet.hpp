@@ -17,18 +17,19 @@ class PersistentSet {
   struct LeafNode;
 
   class iterator {
+    PersistentSet *set;
     LeafNode *leaf;
     int pos;
   public:
-    iterator(LeafNode *leaf, int pos) : leaf(leaf), pos(pos) {}
+    iterator(PersistentSet *set, LeafNode *leaf, int pos) : set(set), leaf(leaf), pos(pos) {}
 
     iterator &operator++() {
-      if(leaf == nullptr) {
+      if (leaf == nullptr) {
         throw;
       }
       pos++;
       if (pos == leaf->size) {
-        leaf = leaf->next;
+        leaf = leaf->next==-1 ? nullptr : set->getPtr(leaf->next).leafNode();
         pos = 0;
       }
       return *this;
@@ -41,65 +42,61 @@ class PersistentSet {
     }
 
     T &operator*() {
-      if(leaf == nullptr) {
+      if (leaf == nullptr) {
         throw;
       }
       return leaf->data[pos];
     }
 
-    bool operator==(const iterator &rhs) const { //notice that end() == end() is always true
-      return leaf == rhs.leaf && pos == rhs.pos;
+    bool operator==(const iterator &rhs) const {
+      return leaf == rhs.leaf && pos == rhs.pos && set == rhs.set;
     }
 
     bool operator!=(const iterator &rhs) const {
-      return leaf != rhs.leaf || pos != rhs.pos;
+      return leaf != rhs.leaf || pos != rhs.pos || set != rhs.set;
     }
   };
 
   class NodePtr {
-    int ptr;
+    std::any ptr;
   public:
-    NodePtr(PersistentSet *set, const TreeNode &treeNode) {
-      ptr = set->treeNodeStorage.add(treeNode) << 1 | 0;
-    }
-    
-    NodePtr(PersistentSet *set, const LeafNode &leafNode) {
-      ptr = set->leafNodeStorage.add(leafNode) << 1 | 1;
-    }
-    
-    bool isLeaf() {
-      return ptr & 1;
+    bool isLeaf;
+
+    explicit NodePtr(TreeNode *ptr) : ptr(ptr), isLeaf(false) {}
+
+    explicit NodePtr(LeafNode *ptr) : ptr(ptr), isLeaf(true) {}
+
+    NodePtr() : ptr(nullptr), isLeaf(false) {}
+
+    TreeNode *treeNode() {
+      return std::any_cast<TreeNode *>(ptr);
     }
 
-    LeafNode leafNode(PersistentSet *set) {
-      return set->leafNodeStorage.get(ptr >> 1);
+    LeafNode *leafNode() {
+      return std::any_cast<LeafNode *>(ptr);
     }
 
-    TreeNode treeNode(PersistentSet *set) {
-      return set->treeNodeStorage.get(ptr >> 1);
-    }
-
-    bool insert(PersistentSet *set, const T &val, TreeNode* parent, int parentPos) {
-      if (isLeaf()) {
-        return leafNode(set)->insert(set, val, parent, parentPos);
+    bool insert(PersistentSet *set, const T &val, TreeNode *parent, int parentPos) {
+      if (isLeaf) {
+        return leafNode()->insert(set, val, parent, parentPos);
       } else {
-        return treeNode(set)->insert(set, val, parent, parentPos);
+        return treeNode()->insert(set, val, parent, parentPos);
       }
     }
 
-    bool erase(PersistentSet *set, const T &val, TreeNode* parent, int parentPos) {
-      if(isLeaf()) {
-        return leafNode(set)->erase(set, val, parent, parentPos);
+    bool erase(PersistentSet *set, const T &val, TreeNode *parent, int parentPos) {
+      if (isLeaf) {
+        return leafNode()->erase(set, val, parent, parentPos);
       } else {
-        return treeNode(set)->erase(set, val, parent, parentPos);
+        return treeNode()->erase(set, val, parent, parentPos);
       }
     }
 
     iterator find(PersistentSet *set, const T &val) {
-      if(isLeaf()) {
-        return leafNode(set)->find(set, val);
+      if (isLeaf) {
+        return leafNode()->find(set, val);
       } else {
-        return treeNode(set)->find(set, val);
+        return treeNode()->find(set, val);
       }
     }
   };
@@ -107,16 +104,16 @@ class PersistentSet {
   struct TreeNode {
     int size = 0; //the number of children
     T index[SIZE_1 - 1];
-    NodePtr children[SIZE_1];
+    int children[SIZE_1];
 
     iterator find(PersistentSet *set, const T &val) { //find first no less than val
       int p = upper_bound(index, index + size - 1, val) - index;
-      return children[p].find(set, val);
+      return set->getPtr(children[p]).find(set, val);
     }
 
     bool insert(PersistentSet *set, const T &val, TreeNode *parent, int pos) { //insert val into this node
       int p = upper_bound(index, index + size - 1, val) - index;
-      NodePtr child = children[p];
+      NodePtr child = set->getPtr(children[p]);
       if (child.insert(set, val, this, p)) {
         if (size == SIZE_1) {
           postInsert(set, parent, pos);
@@ -128,7 +125,7 @@ class PersistentSet {
 
     bool erase(PersistentSet *set, const T &val, TreeNode *parent, int pos) { //erase val from this node
       int p = upper_bound(index, index + size - 1, val) - index;
-      NodePtr child = children[p];
+      NodePtr child = set->getPtr(children[p]);
       if (child.erase(set, val, this, p)) {
         if (size == SIZE_1 / 2 - 1) {
           postErase(set, parent, pos);
@@ -138,11 +135,12 @@ class PersistentSet {
       return false;
     }
 
-    void insertChild(NodePtr newChild, const T &newIndex, int pos) { //insert newChild after children[pos] ans newIndex after index[pos-1]
+    void insertChild(int newChild, const T &newIndex,
+                     int pos) { //insert newChild after children[pos] ans newIndex after index[pos-1]
       int indexPos = pos;
       int childPos = pos + 1;
       memmove(index + indexPos + 1, index + indexPos, (size - indexPos - 1) * sizeof(T));
-      memmove(children + childPos + 1, children + childPos, (size - childPos) * sizeof(NodePtr));
+      memmove(children + childPos + 1, children + childPos, (size - childPos) * sizeof(int));
       index[indexPos] = newIndex;
       children[childPos] = newChild;
       size++;
@@ -152,7 +150,7 @@ class PersistentSet {
       int indexPos = pos;
       int childPos = pos + 1;
       memmove(index + indexPos, index + indexPos + 1, (size - indexPos - 2) * sizeof(T));
-      memmove(children + childPos, children + childPos + 1, (size - childPos - 1) * sizeof(NodePtr));
+      memmove(children + childPos, children + childPos + 1, (size - childPos - 1) * sizeof(int));
       size--;
     }
 
@@ -162,29 +160,29 @@ class PersistentSet {
       newNode.size = half;
       size = half;
       memcpy(newNode.index, index + half, (half - 1) * sizeof(T));
-      memcpy(newNode.children, children + half, half * sizeof(NodePtr));
-      parent->insertChild(NodePtr(set, newNode), index[half - 1], pos);
+      memcpy(newNode.children, children + half, half * sizeof(int));
+      parent->insertChild(set->add(newNode), index[half - 1], pos);
     }
 
     void postErase(PersistentSet *set, TreeNode *parent, int pos) { //when size==SIZE/2-1
-      if(parent->size == 1) { //root
+      if (parent->size == 1) { //root
         return;
       }
       if (pos == 0) {
-        TreeNode sibling = parent->children[pos + 1].treeNode();
-        if (sibling.size > SIZE_1 / 2) {
+        TreeNode *sibling = set->getPtr(parent->children[pos + 1]).treeNode();
+        if (sibling->size > SIZE_1 / 2) {
           memcpy(index + size - 1, parent->index + pos, sizeof(T));
-          memcpy(children + size, sibling.children, sizeof(NodePtr));
-          memcpy(parent->index + pos, sibling.index, sizeof(T));
-          memmove(sibling.index, sibling.index + 1, (sibling.size - 2) * sizeof(T));
-          memmove(sibling.children, sibling.children + 1, (sibling.size - 1) * sizeof(NodePtr));
+          memcpy(children + size, sibling->children, sizeof(NodePtr));
+          memcpy(parent->index + pos, sibling->index, sizeof(T));
+          memmove(sibling->index, sibling->index + 1, (sibling->size - 2) * sizeof(T));
+          memmove(sibling->children, sibling->children + 1, (sibling->size - 1) * sizeof(NodePtr));
           size++;
-          sibling.size--;
+          sibling->size--;
         } else {
-          this->merge(sibling, parent, pos);
+          this->merge(set, sibling, parent, pos);
         }
       } else {
-        TreeNode *sibling = parent->children[pos - 1].treeNode();
+        TreeNode *sibling = set->getPtr(parent->children[pos - 1]).treeNode();
         if (sibling->size > SIZE_1 / 2) {
           memmove(index + 1, index, (size - 1) * sizeof(T));
           memmove(children + 1, children, size * sizeof(NodePtr));
@@ -194,32 +192,32 @@ class PersistentSet {
           size++;
           sibling->size--;
         } else {
-          sibling->merge(this, parent, pos - 1);
+          sibling->merge(set, this, parent, pos - 1);
         }
       }
     }
 
-    void merge(TreeNode *sibling, TreeNode *parent, int pos) { //sibling is parent->children[pos+1]
+    void merge(PersistentSet *set, TreeNode *sibling, TreeNode *parent, int pos) { //sibling is parent->children[pos+1]
       memcpy(index + size - 1, parent->index + pos, sizeof(T));
       memcpy(index + size, sibling->index, (sibling->size - 1) * sizeof(T));
       memcpy(children + size, sibling->children, sibling->size * sizeof(NodePtr));
       size += sibling->size;
       parent->eraseChild(pos);
-      delete sibling;
+      set->remove(parent->children[pos + 1]);
     }
   };
 
   struct LeafNode {
     int size = 0;
     T data[SIZE_2];
-    LeafNode *next; //linked list
+    int next = -1; //linked list
 
-    iterator find(const T &val) { //find first no less than val
+    iterator find(PersistentSet *set, const T &val) { //find first no less than val
       int p = lower_bound(data, data + size, val) - data;
-      return p == size ? iterator(nullptr, 0) : iterator(this, p);
+      return p == size ? iterator(set, next == -1 ? nullptr : set->getPtr(next).leafNode(), 0) : iterator(set, this, p);
     }
 
-    bool insert(const T &val, TreeNode *parent, int pos) { //insert val into this node
+    bool insert(PersistentSet *set, const T &val, TreeNode *parent, int pos) { //insert val into this node
       int p = lower_bound(data, data + size, val) - data;
       if (p < size && data[p] == val) {
         return false;
@@ -228,12 +226,12 @@ class PersistentSet {
       data[p] = val;
       size++;
       if (size == SIZE_2) {
-        postInsert(parent, pos);
+        postInsert(set, parent, pos);
       }
       return true;
     }
 
-    bool erase(const T &val, TreeNode *parent, int pos) { //erase val from this node
+    bool erase(PersistentSet *set, const T &val, TreeNode *parent, int pos) { //erase val from this node
       int p = lower_bound(data, data + size, val) - data;
       if (p >= size || data[p] != val) {
         return false;
@@ -241,28 +239,28 @@ class PersistentSet {
       memmove(data + p, data + p + 1, (size - p - 1) * sizeof(T));
       size--;
       if (size == SIZE_2 / 2 - 1) {
-        postErase(parent, pos);
+        postErase(set, parent, pos);
       }
       return true;
     }
 
-    void postInsert(TreeNode *parent, int pos) { //when size==SIZE
-      auto *newNode = new LeafNode();
+    void postInsert(PersistentSet *set, TreeNode *parent, int pos) { //when size==SIZE
+      LeafNode newNode;
       int half = size / 2;
-      newNode->size = half;
+      newNode.size = half;
       size = half;
-      memcpy(newNode->data, data + half, half * sizeof(T));
-      newNode->next = next;
-      next = newNode;
-      parent->insertChild(NodePtr(newNode), data[half], pos);
+      memcpy(newNode.data, data + half, half * sizeof(T));
+      newNode.next = next;
+      next = set->add(newNode);
+      parent->insertChild(next, data[half], pos);
     }
 
-    void postErase(TreeNode *parent, int pos) { //when size==SIZE/2-1
-      if(parent->size == 1) { //root
+    void postErase(PersistentSet *set, TreeNode *parent, int pos) { //when size==SIZE/2-1
+      if (parent->size == 1) { //root
         return;
       }
       if (pos == 0) {
-        LeafNode *sibling = parent->children[pos + 1].leafNode();
+        LeafNode *sibling = set->getPtr(parent->children[pos + 1]).leafNode();
         if (sibling->size > SIZE_2 / 2) {
           memcpy(data + size, sibling->data, sizeof(T)); //copy one here
           memmove(sibling->data, sibling->data + 1, (sibling->size - 1) * sizeof(T)); //delete one from sibling
@@ -270,74 +268,102 @@ class PersistentSet {
           size++;
           sibling->size--;
         } else {
-          this->merge(sibling, parent, pos);
+          this->merge(set, sibling, parent, pos);
         }
       } else {
-        LeafNode *sibling = parent->children[pos - 1].leafNode();
+        LeafNode *sibling = set->getPtr(parent->children[pos - 1]).leafNode();
         if (sibling->size > SIZE_2 / 2) {
-          memmove(data, data + 1, size * sizeof(T)); //leave one space for copy
+          memmove(data + 1, data, size * sizeof(T)); //leave one space for copy
           memcpy(data, sibling->data + sibling->size - 1, sizeof(T)); //copy one here
           memcpy(parent->index + pos - 1, data, sizeof(T)); //replace parent's index
           size++;
           sibling->size--;
         } else {
-          sibling->merge(this, parent, pos - 1);
+          sibling->merge(set, this, parent, pos - 1);
         }
       }
     }
 
-    void merge(LeafNode *sibling, TreeNode *parent, int pos) { //sibling is parent->children[pos+1]
+    void merge(PersistentSet *set, LeafNode *sibling, TreeNode *parent, int pos) { //sibling is parent->children[pos+1]
       memcpy(data + size, sibling->data, sibling->size * sizeof(T));
       size += sibling->size;
       next = sibling->next;
       parent->eraseChild(pos);
-      delete sibling;
+      set->remove(parent->children[pos + 1]);
     }
   };
 
-  TreeNode *dummy; //there is a fake tree node which always points to the root
-  LeafNode *firstLeaf; //the first leaf node
-  FileStorage<TreeNode, NodePtr> treeNodeStorage;
-  FileStorage<LeafNode, LeafNode*> leafNodeStorage;
+  TreeNode dummy; //there is a fake tree node which always points to the root
+  FileStorage<TreeNode, int> treeNodeStorage;
+  FileStorage<LeafNode, int> leafNodeStorage;
+
+  NodePtr getPtr(int index) {
+    if (index == -1) {
+      return NodePtr();
+    }
+    if (index & 1) {
+      return NodePtr(treeNodeStorage.get(index >> 1, true));
+    }
+    return NodePtr(leafNodeStorage.get(index >> 1, true));
+  }
 
   NodePtr getRoot() {
-    return dummy->children[0];
+    return getPtr(dummy.children[0]);
   }
+
+  int add(const TreeNode &node) {
+    return treeNodeStorage.add(node) << 1 | 1;
+  }
+
+  int add(const LeafNode &node) {
+    return leafNodeStorage.add(node) << 1;
+  }
+
+  void remove(int index) {
+    if (index & 1) {
+      treeNodeStorage.remove(index >> 1);
+    } else {
+      leafNodeStorage.remove(index >> 1);
+    }
+  }
+
 public:
-  PersistentSet() {
-    dummy = new TreeNode();
-    dummy->size = 1;
-    root = getPtr(treeNodeStorage.getInfo());
-    dummy->children[0] = NodePtr(root);
+  explicit PersistentSet(std::string file_name) : treeNodeStorage(-1, file_name + "_tree"),
+                                                  leafNodeStorage(-1, file_name + "_leaf") {
+    dummy.size = 1;
+    dummy.children[0] = treeNodeStorage.info == -1 ? add(LeafNode()) : treeNodeStorage.info;
+  }
+
+  ~PersistentSet() {
+    treeNodeStorage.info = dummy.children[0];
   }
 
   bool insert(const T &val) {
-    bool ret = getRoot().insert(val, dummy, 0);
-    if(dummy->size == 2) {
-      auto *newRoot = new TreeNode();
-      newRoot->size = 1;
-      newRoot->children[0] = NodePtr(dummy);
+    bool ret = getRoot().insert(this, val, &dummy, 0);
+    if (dummy.size == 2) {
+      TreeNode newRoot;
+      newRoot.size = 1;
+      newRoot.children[0] = add(dummy);
       dummy = newRoot;
     }
     return ret;
   }
 
   bool erase(const T &val) {
-    bool ret = getRoot().erase(val, dummy, 0);
+    bool ret = getRoot().erase(this, val, &dummy, 0);
     NodePtr root = getRoot();
-    if(!root.isLeaf) {
-      TreeNode *rootNode = root.treeNode();
-      if(rootNode->size == 1) {
-        NodePtr newDummy = root;
-        delete dummy;
-        dummy = newDummy.treeNode();
+    if (!root.isLeaf) {
+      TreeNode rootNode = *root.treeNode();
+      if (rootNode.size == 1) {
+        remove(dummy.children[0]);
+        dummy = rootNode;
       }
     }
     return ret;
   }
 
   iterator find(const T &val) {
-    return getRoot().find(val);
+    return getRoot().find(this, val);
   }
 };
 
