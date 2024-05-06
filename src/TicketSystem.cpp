@@ -2,11 +2,10 @@
 int N, V;
 std::string S;
 
-PersistentSet<pair<FixedString<64>, int>, 120, 120, 8000> set("set");
+PersistentSet<pair<FixedString<64>, int>, 120, 120, 1000> set("set");
 int main() {
 //  freopen("input.txt", "r", stdin);
 //  freopen("output.txt", "w", stdout);
-//  auto start = std::chrono::high_resolution_clock::now();
   std::cin >> N;
   for (int i = 1; i <= N; i++) {
     std::cin >> S;
@@ -29,10 +28,6 @@ int main() {
       std::cin >> V;
       set.erase(pair(FixedString<64>(S), V));
     }
-    set.checkCache();
   }
-//  auto end = std::chrono::high_resolution_clock::now();
-//  auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-//  std::cerr << "Total program run time: " << duration.count() << " milliseconds" << std::endl;
   return 0;
 }

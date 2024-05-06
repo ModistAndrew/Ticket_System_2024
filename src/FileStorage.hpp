@@ -3,8 +3,6 @@
 
 #include <fstream>
 #include <filesystem>
-#include <map>
-using std::map;
 
 using std::string;
 using std::fstream;
@@ -22,13 +20,19 @@ class FileStorage {
   static constexpr int INT_SIZE = sizeof(int);
   fstream file;
   string fileName;
-  map<int, Cache> cacheMap; //a map from index to cache
+  Cache* cacheMap[CACHE_SIZE]{nullptr}; //a map from pos to cache
   int empty;
   int getEmpty() {
     return empty;
   }
   void setEmpty(int x) {
     empty = x;
+  }
+  static int getPos(int index) {
+    return (index - INFO_SIZE - INT_SIZE) / T_SIZE;
+  }
+  static int getIndex(int pos) {
+    return pos * T_SIZE + INFO_SIZE + INT_SIZE;
   }
   //store pointer to first empty just after info len.
   //empty except end has pointer to next empty; check EOF to determine whether at end. (so don't store anything after this)
@@ -42,26 +46,17 @@ public:
     file.read(reinterpret_cast<char *>(&empty), INT_SIZE);
   }
 
-  void checkCache() {
-    if(cacheMap.size() > CACHE_SIZE) {
-      for (auto &c: cacheMap) {
-        if(c.second.dirty) {
-          file.seekp(c.first);
-          file.write(reinterpret_cast<const char *>(&c.second.data), T_SIZE);
-        }
-      }
-      cacheMap.clear();
-    }
-  }
-
   ~FileStorage() {
     file.seekp(0);
     file.write(reinterpret_cast<const char *>(&info), INFO_SIZE);
     file.write(reinterpret_cast<const char *>(&empty), INT_SIZE);
-    for (auto &c: cacheMap) {
-      if(c.second.dirty) {
-        file.seekp(c.first);
-        file.write(reinterpret_cast<const char *>(&c.second.data), T_SIZE);
+    for(int i= 0; i < CACHE_SIZE; i++) {
+      if(cacheMap[i]) {
+        if(cacheMap[i]->dirty) {
+          file.seekp(getIndex(i));
+          file.write(reinterpret_cast<const char *>(&cacheMap[i]->data), T_SIZE);
+        }
+        delete cacheMap[i];
       }
     }
     file.close();
@@ -93,6 +88,9 @@ public:
     file.seekp(index);
     file.write(reinterpret_cast<const char *>(&t), T_SIZE);
     setEmpty(nxt);
+    if(getPos(index) >= CACHE_SIZE) {
+      throw;
+    }
     return index;
   }
 
@@ -101,11 +99,13 @@ public:
   //set dirty to true if you want to store the object back to file
   //the return value is a pointer to the object in cache. Shouldn't be stored for long.
   T* get(int index, bool dirty) {
-    if (cacheMap.find(index) == cacheMap.end()) {
+    int pos = getPos(index);
+    if(cacheMap[pos] == nullptr) {
+      cacheMap[pos] = new Cache();
       file.seekg(index);
-      file.read(reinterpret_cast<char *>(&cacheMap[index].data), T_SIZE);
+      file.read(reinterpret_cast<char *>(&cacheMap[pos]->data), T_SIZE);
     }
-    auto ret = &cacheMap[index];
+    auto ret = cacheMap[pos];
     if(dirty) {
       ret->dirty = true;
     }
@@ -116,8 +116,10 @@ public:
   //delete a currently occupied index
   //you should never remove an empty index!
   void remove(int index) {
-    if (cacheMap.find(index) != cacheMap.end()) {
-      cacheMap.erase(cacheMap.find(index));
+    int pos = getPos(index);
+    if(cacheMap[pos]) {
+      delete cacheMap[pos];
+      cacheMap[pos] = nullptr;
     }
     int nxt = getEmpty();
     setEmpty(index);

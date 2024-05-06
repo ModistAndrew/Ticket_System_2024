@@ -342,11 +342,6 @@ public:
     treeNodeStorage.info = dummy.children[0];
   }
 
-  void checkCache() {
-    treeNodeStorage.checkCache();
-    leafNodeStorage.checkCache();
-  }
-
   bool insert(const T &val) {
     bool ret = getRoot().insert(this, val, &dummy, 0);
     if (dummy.size == 2) {
