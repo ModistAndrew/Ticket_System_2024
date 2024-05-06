@@ -12,12 +12,10 @@ using std::ofstream;
 
 template<class T, class INFO, int CACHE_SIZE>
 class FileStorage {
-public:
   struct Cache {
     T data;
     bool dirty = false;
   };
-private:
   static constexpr int T_SIZE = sizeof(T);
   static constexpr int INFO_SIZE = sizeof(INFO);
   static constexpr int INT_SIZE = sizeof(int);
@@ -101,12 +99,16 @@ public:
   //return the object at index
   //set dirty to true if you want to store the object back to file
   //the return value is a pointer to the object in cache. Shouldn't be stored for long.
-  Cache* get(int index) {
+  T* get(int index, bool dirty) {
     if (cacheMap.find(index) == cacheMap.end()) {
       file.seekg(index);
       file.read(reinterpret_cast<char *>(&cacheMap[index].data), T_SIZE);
     }
-    return &cacheMap[index];
+    auto ret = &cacheMap[index];
+    if(dirty) {
+      ret->dirty = true;
+    }
+    return &ret->data;
   }
 
   //make sure the index is valid
