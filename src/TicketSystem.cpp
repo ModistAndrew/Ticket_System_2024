@@ -1,5 +1,4 @@
 #include "PersistentSet.hpp"
-
 int N, V;
 std::string S;
 
