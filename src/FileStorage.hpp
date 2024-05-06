@@ -9,7 +9,7 @@ using std::fstream;
 using std::ifstream;
 using std::ofstream;
 
-template<class T, class INFO, int CACHE_SIZE>
+template<class T, class INFO, int MAX_SIZE>
 class FileStorage {
   struct Cache {
     T data;
@@ -20,7 +20,7 @@ class FileStorage {
   static constexpr int INT_SIZE = sizeof(int);
   fstream file;
   string fileName;
-  Cache* cacheMap[CACHE_SIZE]{nullptr}; //a map from pos to cache
+  Cache* cacheMap[MAX_SIZE]{nullptr}; //a map from pos to cache
   int empty;
   int getEmpty() {
     return empty;
@@ -50,7 +50,7 @@ public:
     file.seekp(0);
     file.write(reinterpret_cast<const char *>(&info), INFO_SIZE);
     file.write(reinterpret_cast<const char *>(&empty), INT_SIZE);
-    for(int i= 0; i < CACHE_SIZE; i++) {
+    for(int i= 0; i < MAX_SIZE; i++) {
       if(cacheMap[i]) {
         if(cacheMap[i]->dirty) {
           file.seekp(getIndex(i));
@@ -88,7 +88,7 @@ public:
     file.seekp(index);
     file.write(reinterpret_cast<const char *>(&t), T_SIZE);
     setEmpty(nxt);
-    if(getPos(index) >= CACHE_SIZE) {
+    if(getPos(index) >= MAX_SIZE) {
       throw;
     }
     return index;

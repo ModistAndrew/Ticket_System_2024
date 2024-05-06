@@ -2,10 +2,8 @@
 int N, V;
 std::string S;
 
-PersistentSet<pair<FixedString<64>, int>, 120, 120, 4000> set("set");
+PersistentSet<pair<FixedString<64>, int>, 100, 100, 4000> set("set");
 int main() {
-//  freopen("input.txt", "r", stdin);
-//  freopen("output.txt", "w", stdout);
   std::cin >> N;
   for (int i = 1; i <= N; i++) {
     std::cin >> S;

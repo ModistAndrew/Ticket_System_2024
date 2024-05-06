@@ -28,7 +28,7 @@ template<typename T>
 T *upper_bound(T *first, T *last, const T &val) {
   while (first < last) {
     T *mid = first + (last - first) / 2;
-    if (!(val < *mid)) {
+    if (val >= *mid) {
       first = mid + 1;
     } else {
       last = mid;
