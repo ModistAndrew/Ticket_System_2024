@@ -12,19 +12,22 @@ using std::ofstream;
 
 template<class T, class INFO, int CACHE_SIZE>
 class FileStorage {
-  fstream file;
-  string fileName;
+public:
+  struct Cache {
+    T data;
+    bool dirty = false;
+  };
+private:
   static constexpr int T_SIZE = sizeof(T);
   static constexpr int INFO_SIZE = sizeof(INFO);
   static constexpr int INT_SIZE = sizeof(int);
-
-  map<int, T> cacheMap; //a map from index to cache
+  fstream file;
+  string fileName;
+  map<int, Cache> cacheMap; //a map from index to cache
   int empty;
-
   int getEmpty() {
     return empty;
   }
-
   void setEmpty(int x) {
     empty = x;
   }
@@ -43,8 +46,10 @@ public:
   void checkCache() {
     if(cacheMap.size() > CACHE_SIZE) {
       for (auto &c: cacheMap) {
-        file.seekp(c.first);
-        file.write(reinterpret_cast<const char *>(&c.second), T_SIZE);
+        if(c.second.dirty) {
+          file.seekp(c.first);
+          file.write(reinterpret_cast<const char *>(&c.second.data), T_SIZE);
+        }
       }
       cacheMap.clear();
     }
@@ -55,8 +60,10 @@ public:
     file.write(reinterpret_cast<const char *>(&info), INFO_SIZE);
     file.write(reinterpret_cast<const char *>(&empty), INT_SIZE);
     for (auto &c: cacheMap) {
-      file.seekp(c.first);
-      file.write(reinterpret_cast<const char *>(&c.second), T_SIZE);
+      if(c.second.dirty) {
+        file.seekp(c.first);
+        file.write(reinterpret_cast<const char *>(&c.second.data), T_SIZE);
+      }
     }
     file.close();
   }
@@ -94,10 +101,10 @@ public:
   //return the object at index
   //set dirty to true if you want to store the object back to file
   //the return value is a pointer to the object in cache. Shouldn't be stored for long.
-  T *get(int index, bool dirty) {
+  Cache* get(int index) {
     if (cacheMap.find(index) == cacheMap.end()) {
       file.seekg(index);
-      file.read(reinterpret_cast<char *>(&cacheMap[index]), T_SIZE);
+      file.read(reinterpret_cast<char *>(&cacheMap[index].data), T_SIZE);
     }
     return &cacheMap[index];
   }
