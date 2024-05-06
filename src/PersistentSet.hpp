@@ -172,10 +172,10 @@ class PersistentSet {
         TreeNode *sibling = set->getPtr(parent->children[pos + 1]).treeNode();
         if (sibling->size > SIZE_1 / 2) {
           memcpy(index + size - 1, parent->index + pos, sizeof(T));
-          memcpy(children + size, sibling->children, sizeof(NodePtr));
+          memcpy(children + size, sibling->children, sizeof(int));
           memcpy(parent->index + pos, sibling->index, sizeof(T));
           memmove(sibling->index, sibling->index + 1, (sibling->size - 2) * sizeof(T));
-          memmove(sibling->children, sibling->children + 1, (sibling->size - 1) * sizeof(NodePtr));
+          memmove(sibling->children, sibling->children + 1, (sibling->size - 1) * sizeof(int));
           size++;
           sibling->size--;
         } else {
@@ -185,9 +185,9 @@ class PersistentSet {
         TreeNode *sibling = set->getPtr(parent->children[pos - 1]).treeNode();
         if (sibling->size > SIZE_1 / 2) {
           memmove(index + 1, index, (size - 1) * sizeof(T));
-          memmove(children + 1, children, size * sizeof(NodePtr));
+          memmove(children + 1, children, size * sizeof(int));
           memcpy(index, parent->index + pos - 1, sizeof(T));
-          memcpy(children, sibling->children + sibling->size - 1, sizeof(NodePtr));
+          memcpy(children, sibling->children + sibling->size - 1, sizeof(int));
           memcpy(parent->index + pos - 1, sibling->index + sibling->size - 2, sizeof(T));
           size++;
           sibling->size--;
@@ -200,10 +200,10 @@ class PersistentSet {
     void merge(PersistentSet *set, TreeNode *sibling, TreeNode *parent, int pos) { //sibling is parent->children[pos+1]
       memcpy(index + size - 1, parent->index + pos, sizeof(T));
       memcpy(index + size, sibling->index, (sibling->size - 1) * sizeof(T));
-      memcpy(children + size, sibling->children, sibling->size * sizeof(NodePtr));
+      memcpy(children + size, sibling->children, sibling->size * sizeof(int));
       size += sibling->size;
-      parent->eraseChild(pos);
       set->remove(parent->children[pos + 1]);
+      parent->eraseChild(pos);
     }
   };
 
@@ -288,8 +288,8 @@ class PersistentSet {
       memcpy(data + size, sibling->data, sibling->size * sizeof(T));
       size += sibling->size;
       next = sibling->next;
-      parent->eraseChild(pos);
       set->remove(parent->children[pos + 1]);
+      parent->eraseChild(pos);
     }
   };
 
