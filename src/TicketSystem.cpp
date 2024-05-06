@@ -4,8 +4,8 @@ std::string S;
 
 PersistentSet<pair<FixedString<64>, int>, 200, 200, 100> set("set");
 int main() {
-  freopen("input.txt", "r", stdin);
-  freopen("output.txt", "w", stdout);
+//  freopen("input.txt", "r", stdin);
+//  freopen("output.txt", "w", stdout);
   std::cin >> N;
   for (int i = 1; i <= N; i++) {
     std::cin >> S;
