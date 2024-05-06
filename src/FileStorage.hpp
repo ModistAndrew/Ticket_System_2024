@@ -3,7 +3,8 @@
 
 #include <fstream>
 #include <filesystem>
-#include "map.hpp"
+#include <map>
+using std::map;
 
 using std::string;
 using std::fstream;
