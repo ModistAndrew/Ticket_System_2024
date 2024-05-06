@@ -3,15 +3,14 @@
 
 #include <fstream>
 #include <filesystem>
-#include <map>
-#include <list>
+#include "map.hpp"
 
 using std::string;
 using std::fstream;
 using std::ifstream;
 using std::ofstream;
 
-template<class T, class INFO, int CACHE_SIZE = 10>
+template<class T, class INFO, int CACHE_SIZE>
 class FileStorage {
   fstream file;
   string fileName;
@@ -19,7 +18,7 @@ class FileStorage {
   static constexpr int INFO_SIZE = sizeof(INFO);
   static constexpr int INT_SIZE = sizeof(int);
 
-  std::map<int, T> cacheMap; //a map from index to cache
+  map<int, T> cacheMap; //a map from index to cache
   int empty;
 
   int getEmpty() {
@@ -39,6 +38,16 @@ public:
     file.open(fileName, std::ios::in | std::ios::out | std::ios::binary);
     file.read(reinterpret_cast<char *>(&info), INFO_SIZE);
     file.read(reinterpret_cast<char *>(&empty), INT_SIZE);
+  }
+
+  void checkCache() {
+    if(cacheMap.size() > CACHE_SIZE) {
+      for (auto &c: cacheMap) {
+        file.seekp(c.first);
+        file.write(reinterpret_cast<const char *>(&c.second), T_SIZE);
+      }
+      cacheMap.clear();
+    }
   }
 
   ~FileStorage() {
@@ -98,7 +107,7 @@ public:
   //you should never remove an empty index!
   void remove(int index) {
     if (cacheMap.find(index) != cacheMap.end()) {
-      cacheMap.erase(index);
+      cacheMap.erase(cacheMap.find(index));
     }
     int nxt = getEmpty();
     setEmpty(index);

@@ -8,7 +8,7 @@
 #include "Util.hpp"
 #include "FileStorage.hpp"
 
-template<typename T, int SIZE_1, int SIZE_2>
+template<typename T, int SIZE_1, int SIZE_2, int CACHE_SIZE>
 class PersistentSet {
   static_assert(SIZE_1 >= 4 && SIZE_1 % 2 == 0, "SIZE_1 must be even and at least 4");
   static_assert(SIZE_2 >= 4 && SIZE_2 % 2 == 0, "SIZE_2 must be even and at least 4");
@@ -29,7 +29,7 @@ class PersistentSet {
       }
       pos++;
       if (pos == leaf->size) {
-        leaf = leaf->next==-1 ? nullptr : set->getPtr(leaf->next).leafNode();
+        leaf = leaf->next == -1 ? nullptr : set->getPtr(leaf->next).leafNode();
         pos = 0;
       }
       return *this;
@@ -55,10 +55,14 @@ class PersistentSet {
     bool operator!=(const iterator &rhs) const {
       return leaf != rhs.leaf || pos != rhs.pos || set != rhs.set;
     }
+
+    bool end() {
+      return leaf == nullptr;
+    }
   };
 
   class NodePtr {
-    std::any ptr;
+    void *ptr;
   public:
     bool isLeaf;
 
@@ -69,11 +73,11 @@ class PersistentSet {
     NodePtr() : ptr(nullptr), isLeaf(false) {}
 
     TreeNode *treeNode() {
-      return std::any_cast<TreeNode *>(ptr);
+      return static_cast<TreeNode *>(ptr);
     }
 
     LeafNode *leafNode() {
-      return std::any_cast<LeafNode *>(ptr);
+      return static_cast<LeafNode *>(ptr);
     }
 
     bool insert(PersistentSet *set, const T &val, TreeNode *parent, int parentPos) {
@@ -294,8 +298,8 @@ class PersistentSet {
   };
 
   TreeNode dummy; //there is a fake tree node which always points to the root
-  FileStorage<TreeNode, int> treeNodeStorage;
-  FileStorage<LeafNode, int> leafNodeStorage;
+  FileStorage<TreeNode, int, CACHE_SIZE> treeNodeStorage;
+  FileStorage<LeafNode, int, CACHE_SIZE> leafNodeStorage;
 
   NodePtr getPtr(int index) {
     if (index == -1) {
@@ -338,6 +342,11 @@ public:
     treeNodeStorage.info = dummy.children[0];
   }
 
+  void checkCache() {
+    treeNodeStorage.checkCache();
+    leafNodeStorage.checkCache();
+  }
+
   bool insert(const T &val) {
     bool ret = getRoot().insert(this, val, &dummy, 0);
     if (dummy.size == 2) {
@@ -362,8 +371,16 @@ public:
     return ret;
   }
 
-  iterator find(const T &val) {
+  iterator lowerBound(const T &val) {
     return getRoot().find(this, val);
+  }
+
+  iterator upperBound(const T &val) {
+    iterator it = lowerBound(val);
+    if (!it.end() && *it == val) {
+      ++it;
+    }
+    return it;
   }
 };
 
