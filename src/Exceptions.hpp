@@ -15,4 +15,8 @@ struct InvalidIterator : public Error {
   InvalidIterator() : Error("Invalid iterator") {}
 };
 
+struct FileSizeExceeded : public Error {
+  FileSizeExceeded() : Error("File size exceeded") {}
+};
+
 #endif

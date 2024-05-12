@@ -8,7 +8,7 @@
 #include "Util.hpp"
 #include "FileStorage.hpp"
 
-template<typename T, int SIZE_1, int SIZE_2, int CACHE_SIZE>
+template<typename T, int SIZE_1, int SIZE_2, int MAX_SIZE>
 class PersistentSet {
   static_assert(SIZE_1 >= 4 && SIZE_1 % 2 == 0, "SIZE_1 must be even and at least 4");
   static_assert(SIZE_2 >= 4 && SIZE_2 % 2 == 0, "SIZE_2 must be even and at least 4");
@@ -298,8 +298,8 @@ class PersistentSet {
   };
 
   TreeNode dummy; //there is a fake tree node which always points to the root
-  FileStorage<TreeNode, int, CACHE_SIZE> treeNodeStorage;
-  FileStorage<LeafNode, int, CACHE_SIZE> leafNodeStorage;
+  FileStorage<TreeNode, int, MAX_SIZE> treeNodeStorage;
+  FileStorage<LeafNode, int, MAX_SIZE> leafNodeStorage;
 
   NodePtr getPtr(int index, bool dirty) {
     if (index == -1) {

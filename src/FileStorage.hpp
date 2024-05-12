@@ -3,6 +3,7 @@
 
 #include <fstream>
 #include <filesystem>
+#include "Exceptions.hpp"
 
 using std::string;
 using std::fstream;
@@ -89,7 +90,7 @@ public:
     file.write(reinterpret_cast<const char *>(&t), T_SIZE);
     setEmpty(nxt);
     if(getPos(index) >= MAX_SIZE) {
-      throw;
+      throw FileSizeExceeded();
     }
     return index;
   }
