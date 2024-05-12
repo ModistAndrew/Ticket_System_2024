@@ -11,7 +11,7 @@ ull hash(const std::string &s) {
   return h;
 }
 
-PersistentSet<pair<ull, int>, 400, 400, 4000> set("set");
+PersistentSet<pair<ull, int>, 800, 800, 4000> set("set");
 int main() {
   std::cin >> N;
   for (int i = 1; i <= N; i++) {
