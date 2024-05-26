@@ -8,7 +8,7 @@
 #include "Util.hpp"
 #include "FileStorage.hpp"
 
-template<typename T, int MAX_SIZE = 1000>
+template<typename T, int MAX_SIZE = 20000>
 class PersistentMap { //use T::index as key
   struct TreeNode;
   struct LeafNode;

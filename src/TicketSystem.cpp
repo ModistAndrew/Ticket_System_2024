@@ -15,7 +15,7 @@ struct Data {
   pair<ull, int> index;
 };
 
-PersistentMap<Data, 800, 800, 4000> set("set");
+PersistentMap<Data, 4000> set("set");
 int main() {
   std::cin >> N;
   for (int i = 1; i <= N; i++) {
