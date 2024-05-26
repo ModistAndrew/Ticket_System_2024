@@ -10,8 +10,7 @@
 #include <string>
 #include <cstring>
 #include <cmath>
-#include <vector>
-using std::vector;
+#include "StringParser.hpp"
 
 template<typename T>
 T *lower_bound(T *first, T *last, const T &val) {
@@ -65,142 +64,23 @@ T *upper_index_bound(T *first, T *last, const INDEX &val) {
   return first;
 }
 
-int parseInt(const std::string &s) {
-  int x = 0;
-  bool neg = false;
-  for (char c: s) {
-    if (c == '-') {
-      neg = true;
-      continue;
-    }
-    x = x * 10 + c - '0';
-  }
-  return neg ? -x : x;
-}
+struct Chrono {
+  int date;
+  int time;
+  inline static const std::string EMPTY = "xx-xx xx:xx";
+  Chrono(int date, int time) : date(date), time(time) {}
 
-std::string toStringInt(int x) {
-  if (x == 0) {
-    return "0";
+  Chrono operator+=(int minutes) {
+    time += minutes;
+    date += time / 1440;
+    time %= 1440;
+    return *this;
   }
-  std::string ret;
-  if (x < 0) {
-    ret.push_back('-');
-    x = -x;
-  }
-  std::string tmp;
-  while (x) {
-    tmp.push_back(x % 10 + '0');
-    x /= 10;
-  }
-  for (int i = tmp.length() - 1; i >= 0; i--) {
-    ret.push_back(tmp[i]);
-  }
-  return ret;
-}
 
-//vector shouldn't be empty and there should be no empty string
-vector<std::string> parseVector(const std::string &s, char delim) {
-  vector<std::string> ret;
-  std::string tmp;
-  for (char c: s) {
-    if (c == delim) {
-      ret.push_back(tmp); //we accept empty string
-      tmp.clear();
-    } else {
-      tmp.push_back(c);
-    }
+  std::string toString() const {
+    return toStringDate(date) + ' ' + toStringTime(time);
   }
-  ret.push_back(tmp);
-  return ret;
-}
-
-std::string toStringVector(const vector<std::string> &v, char delim) {
-  std::string ret;
-  for (int i = 0; i < v.size(); i++) {
-    if (i) {
-      ret += delim;
-    }
-    ret += v[i];
-  }
-  return ret;
-}
-
-//use "_" to represent empty vector
-vector<int> parseIntVector(const std::string &s, char delim) {
-  if(s=="_") {
-    return {};
-  }
-  vector<int> ret;
-  std::string tmp;
-  for (char c: s) {
-    if (c == delim) {
-      ret.push_back(parseInt(tmp));
-      tmp.clear();
-    } else {
-      tmp.push_back(c);
-    }
-  }
-  ret.push_back(parseInt(tmp));
-  return ret;
-}
-
-std::string toStringIntVector(const vector<int> &v, char delim) {
-  if(v.empty()) {
-    return "_";
-  }
-  std::string ret;
-  for (int i = 0; i < v.size(); i++) {
-    if (i) {
-      ret += delim;
-    }
-    ret += toStringInt(v[i]);
-  }
-  return ret;
-}
-
-int parseTime(const std::string &s) { //00:00 to 23:59
-  return ((s[0] - '0') * 10 + (s[1] - '0')) * 60 + ((s[3] - '0') * 10 + (s[4] - '0'));
-}
-
-std::string toStringTime(int x) {
-  std::string ret;
-  int hour = x / 60;
-  int minute = x % 60;
-  ret.push_back(hour / 10 + '0');
-  ret.push_back(hour % 10 + '0');
-  ret.push_back(':');
-  ret.push_back(minute / 10 + '0');
-  ret.push_back(minute % 10 + '0');
-  return ret;
-}
-
-int parseDate(const std::string &s) { //06-01 to 08-31
-  int day = (s[3] - '0') * 10 + (s[4] - '0');
-  if (s[1] == '6') {
-    return day - 1;
-  } else if (s[1] == '7') {
-    return day + 29;
-  } else {
-    return day + 60;
-  }
-}
-
-std::string toStringDate(int x) {
-  std::string ret;
-  if (x < 30) {
-    ret = "06-";
-    x += 1;
-  } else if (x < 61) {
-    ret = "07-";
-    x -= 29;
-  } else {
-    ret = "08-";
-    x -= 60;
-  }
-  ret.push_back(x / 10 + '0');
-  ret.push_back(x % 10 + '0');
-  return ret;
-}
+};
 
 template<class T1, class T2>
 struct pair {

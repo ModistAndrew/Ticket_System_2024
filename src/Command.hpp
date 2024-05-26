@@ -36,7 +36,7 @@ struct Command {
     }
   }
 
-  const std::string& getParam(char c) const {
+  const std::string &getParam(char c) const {
     return params[c - 'a'];
   }
 
@@ -47,18 +47,20 @@ struct Command {
 
 namespace Commands {
   typedef std::string (*CommandFunc)(const Command &);
+
   map<std::string, CommandFunc> commandMap;
   bool running = true;
 
   std::string addUser(const Command &command) {
-    Account newAccount(command.getParam('u'), command.getParam('p'), command.getParam('n'), command.getParam('m'), command.getIntParam('g'));
-    if(AccountStorage::empty()) {
+    Account newAccount(command.getParam('u'), command.getParam('p'), command.getParam('n'), command.getParam('m'),
+                       command.getIntParam('g'));
+    if (AccountStorage::empty()) {
       newAccount.privilege = 10;
       AccountStorage::add(newAccount);
       return "0";
     } else {
       auto currentAccount = Accounts::get(command.getParam('c'));
-      if(!currentAccount.present || currentAccount.value.privilege <= newAccount.privilege) {
+      if (!currentAccount.present || currentAccount.value.privilege <= newAccount.privilege) {
         return "-1";
       }
       return AccountStorage::add(newAccount) ? "0" : "-1";
@@ -76,8 +78,9 @@ namespace Commands {
   std::string queryProfile(const Command &command) {
     auto currentAccount = Accounts::get(command.getParam('c'));
     auto queryAccount = AccountStorage::get(command.getParam('u'));
-    if(!currentAccount.present || !queryAccount.present ||
-    (currentAccount.value.index != queryAccount.value.index && currentAccount.value.privilege <= queryAccount.value.privilege)) {
+    if (!currentAccount.present || !queryAccount.present ||
+        (currentAccount.value.index != queryAccount.value.index &&
+         currentAccount.value.privilege <= queryAccount.value.privilege)) {
       return "-1";
     }
     std::cout << queryAccount.value;
@@ -87,22 +90,23 @@ namespace Commands {
   std::string modifyProfile(const Command &command) {
     auto currentAccount = Accounts::get(command.getParam('c'));
     auto modifyAccount = AccountStorage::get(command.getParam('u'));
-    if(!currentAccount.present || !modifyAccount.present ||
-      (currentAccount.value.index != modifyAccount.value.index && currentAccount.value.privilege <= modifyAccount.value.privilege)) {
+    if (!currentAccount.present || !modifyAccount.present ||
+        (currentAccount.value.index != modifyAccount.value.index &&
+         currentAccount.value.privilege <= modifyAccount.value.privilege)) {
       return "-1";
     }
     Account newAccount = modifyAccount.value;
-    if(!command.getParam('p').empty()) {
+    if (!command.getParam('p').empty()) {
       newAccount.password = command.getParam('p');
     }
-    if(!command.getParam('n').empty()) {
+    if (!command.getParam('n').empty()) {
       newAccount.name = command.getParam('n');
     }
-    if(!command.getParam('m').empty()) {
+    if (!command.getParam('m').empty()) {
       newAccount.mailAddr = command.getParam('m');
     }
-    if(!command.getParam('g').empty()) {
-      if(command.getIntParam('g') >= currentAccount.value.privilege) {
+    if (!command.getParam('g').empty()) {
+      if (command.getIntParam('g') >= currentAccount.value.privilege) {
         return "-1";
       }
       newAccount.privilege = command.getIntParam('g');
@@ -124,11 +128,12 @@ namespace Commands {
     newTrain.stopoverTimes = parseIntVector(command.getParam('o'), '|');
     vector<int> saleDate;
     vector<string> v = parseVector(command.getParam('d'), '|');
-    for(const string &s: v) {
+    for (const string &s: v) {
       saleDate.push_back(parseDate(s));
     }
     newTrain.saleDate = saleDate;
     newTrain.type = command.getParam('y');
+    newTrain.initSeats();
     return Trains::addTrain(newTrain) ? "0" : "-1";
   }
 
@@ -141,12 +146,39 @@ namespace Commands {
   }
 
   std::string queryTrain(const Command &command) {
-    auto train = Trains::getTrain(command.getParam('i'));
-    if(!train.present) {
+    auto train = Trains::getTrain(command.getParam('i'), false, false);
+    if (!train.present) {
       return "-1";
     }
-    std::cout << train.value.toString();
+    int date = parseDate(command.getParam('d'));
+    TrainInfo &trainInfo = train.value;
+    if (!trainInfo.checkDate(date)) {
+      return "-1";
+    }
+    std::cout << trainInfo.trainID << ' ' << trainInfo.type << '\n';
+    Chrono currentChrono = {date, trainInfo.startTime};
+    int currentPrice = 0;
+    int *seats = trainInfo.getSeats(date);
+    for (int i = 0; i < trainInfo.stationNum; i++) {
+      std::cout << trainInfo.stationNames[i] << ' '
+                << (i == 0 ? Chrono::EMPTY : currentChrono.toString()) << " -> ";
+      if (i > 0 && i < trainInfo.stationNum - 1) {
+        currentChrono += trainInfo.stopoverTimes[i - 1];
+      }
+      std::cout << (i == trainInfo.stationNum - 1 ? Chrono::EMPTY : currentChrono.toString()) << ' '
+                << currentPrice << ' '
+                << (i == trainInfo.stationNum - 1 ? "x" : toStringInt(*seats));
+      if (i < trainInfo.stationNum - 1) {
+        currentChrono += trainInfo.travelTimes[i];
+        currentPrice += trainInfo.prices[i];
+        seats++;
+        std::cout << '\n';
+      }
+    }
     return "";
+  }
+
+  std::string buyTicket(const Command &command) {
   }
 
   std::string exit(const Command &command) {
