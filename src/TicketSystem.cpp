@@ -1,4 +1,5 @@
 #include "Command.hpp"
+#include "SimpleFile.hpp"
 
 int main() {
   Commands::init();

@@ -7,6 +7,7 @@
 
 #include "map.hpp"
 #include "Account.hpp"
+#include "Train.hpp"
 
 struct Command {
   std::string timestamp;
@@ -111,6 +112,43 @@ namespace Commands {
     return "";
   }
 
+  std::string addTrain(const Command &command) {
+    TrainInfo newTrain;
+    newTrain.trainID = command.getParam('i');
+    newTrain.stationNum = command.getIntParam('n');
+    newTrain.seatNum = command.getIntParam('m');
+    newTrain.stationNames = parseVector(command.getParam('s'), '|');
+    newTrain.prices = parseIntVector(command.getParam('p'), '|');
+    newTrain.startTime = parseTime(command.getParam('x'));
+    newTrain.travelTimes = parseIntVector(command.getParam('t'), '|');
+    newTrain.stopoverTimes = parseIntVector(command.getParam('o'), '|');
+    vector<int> saleDate;
+    vector<string> v = parseVector(command.getParam('d'), '|');
+    for(const string &s: v) {
+      saleDate.push_back(parseDate(s));
+    }
+    newTrain.saleDate = saleDate;
+    newTrain.type = command.getParam('y');
+    return Trains::addTrain(newTrain) ? "0" : "-1";
+  }
+
+  std::string deleteTrain(const Command &command) {
+    return Trains::deleteTrain(command.getParam('i')) ? "0" : "-1";
+  }
+
+  std::string releaseTrain(const Command &command) {
+    return Trains::releaseTrain(command.getParam('i')) ? "0" : "-1";
+  }
+
+  std::string queryTrain(const Command &command) {
+    auto train = Trains::getTrain(command.getParam('i'));
+    if(!train.present) {
+      return "-1";
+    }
+    std::cout << train.value.toString();
+    return "";
+  }
+
   std::string exit(const Command &command) {
     running = false;
     return "bye";
@@ -123,6 +161,10 @@ namespace Commands {
     commandMap["query_profile"] = queryProfile;
     commandMap["modify_profile"] = modifyProfile;
     commandMap["exit"] = exit;
+    commandMap["add_train"] = addTrain;
+    commandMap["delete_train"] = deleteTrain;
+    commandMap["release_train"] = releaseTrain;
+    commandMap["query_train"] = queryTrain;
   }
 
   std::string run(const std::string &s) {
