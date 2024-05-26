@@ -37,9 +37,34 @@ T *upper_bound(T *first, T *last, const T &val) {
   return first;
 }
 
+template<typename T, typename INDEX>
+T *lower_index_bound(T *first, T *last, const INDEX &val) {
+  while (first < last) {
+    T *mid = first + (last - first) / 2;
+    if (mid->index < val) {
+      first = mid + 1;
+    } else {
+      last = mid;
+    }
+  }
+  return first;
+}
+
+template<typename T, typename INDEX>
+T *upper_index_bound(T *first, T *last, const INDEX &val) {
+  while (first < last) {
+    T *mid = first + (last - first) / 2;
+    if (val >= mid->index) {
+      first = mid + 1;
+    } else {
+      last = mid;
+    }
+  }
+  return first;
+}
+
 template<class T1, class T2>
-class pair {
-public:
+struct pair {
   T1 first;
   T2 second;
 
@@ -74,6 +99,16 @@ public:
     out << rhs.first << " " << rhs.second;
     return out;
   }
+};
+
+template<typename T>
+struct Optional {
+  T value;
+  bool present;
+
+  Optional() : present(false) {}
+
+  Optional(const T &value) : value(value), present(true) {}
 };
 
 template<int L>
@@ -112,6 +147,12 @@ public:
     }
     return out;
   }
+
+  bool empty() const {
+    return key[0] == '\0';
+  }
 };
 
+using String20 = FixedString<20>;
+using String30 = FixedString<30>;
 #endif //TICKET_SYSTEM_2024_UTIL_HPP
