@@ -63,6 +63,19 @@ T *upper_index_bound(T *first, T *last, const INDEX &val) {
   return first;
 }
 
+int parseInt(const std::string &s) {
+  int x = 0;
+  bool neg = false;
+  for (char c : s) {
+    if (c == '-') {
+      neg = true;
+      continue;
+    }
+    x = x * 10 + c - '0';
+  }
+  return neg ? -x : x;
+}
+
 template<class T1, class T2>
 struct pair {
   T1 first;
@@ -115,7 +128,7 @@ template<int L>
 class FixedString { // Fixed length string with max length L
   char key[L];
 public:
-  explicit FixedString(const std::string &s) : key{} {
+  FixedString(const std::string &s) : key{} { //use implicit conversion
     if (s.length() > L) {
       throw;
     }
@@ -124,7 +137,9 @@ public:
 
   FixedString() = default;
 
-  auto operator<=>(const FixedString &) const = default;
+  auto operator<=>(const FixedString &rhs) const = default;
+
+  bool operator==(const FixedString &rhs) const = default;
 
   int len() const {
     return strnlen(key, L);

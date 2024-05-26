@@ -1,0 +1,10 @@
+//
+// Created by zjx on 2024/5/26.
+//
+
+#ifndef TICKETSYSTEM2024_TRAIN_HPP
+#define TICKETSYSTEM2024_TRAIN_HPP
+
+
+
+#endif //TICKETSYSTEM2024_TRAIN_HPP

@@ -15,6 +15,10 @@ struct InvalidIterator : public Error {
   InvalidIterator() : Error("Invalid iterator") {}
 };
 
+struct ContainerEmpty : public Error {
+  ContainerEmpty() : Error("Container is empty") {}
+};
+
 struct FileSizeExceeded : public Error {
   FileSizeExceeded() : Error("File size exceeded") {}
 };
