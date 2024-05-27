@@ -12,7 +12,7 @@
 struct Order {
   String20 index; //user ID
   String20 trainID;
-  int status;
+  int status; //0 for success, 1 for pending, 2 for refunded
   int trainNum;
   int from;
   int to;
@@ -31,9 +31,12 @@ namespace Orders {
   PersistentMultiMap<Order> orderMap("order");
   PersistentSet<OrderQueue> orderQueueMap("order_queue");
 
-  void addOrder(const Order &order) {
+  void addOrder(Order &order) { //success or pending
     orderMap.insert(order);
-    orderQueueMap.insert(OrderQueue{order.trainID, order.trainNum, -1, -1});
+    if(order.status == 1) {
+      auto it = orderMap.find(order.index); //point to the last order which has just been inserted
+      orderQueueMap.insert(OrderQueue{order.trainID, order.trainNum, -it.getLeafPos(), -it.getPos()});
+    }
   }
 }
 #endif //TICKETSYSTEM2024_ORDER_HPP

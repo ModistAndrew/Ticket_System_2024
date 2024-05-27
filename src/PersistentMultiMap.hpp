@@ -79,6 +79,14 @@ class PersistentMultiMap { //use INDEX as key and T as value. Data can only be i
     void markDirty() { //set current node as dirty
       set->getPtr(leafPos, true);
     }
+
+    int getLeafPos() {
+      return leafPos;
+    }
+
+    int getPos() {
+      return pos;
+    }
   };
 
   iterator end() {

@@ -82,6 +82,11 @@ struct TrainInfo {
     return startDate - firstStartDate;
   }
 
+  int searchTrainNum(int departureDate,
+                     int stationIndex) { //search the train num when the train depart from station[stationIndex] on departureDate
+    return departureDate - getDeparture(0, stationIndex).date;
+  }
+
   int getStationIndex(const std::string &stationName) {
     for (int i = 0; i < stationNum; i++) {
       if (stationNames[i] == stationName) {
@@ -101,6 +106,18 @@ struct TrainInfo {
 
   int getSeat(int trainNum, int stationIndex) { //stationIndex should be less than stationNum - 1
     return seats[trainNum * (stationNum - 1) + stationIndex];
+  }
+
+  int buy(int trainNum, int startStationIndex, int endStationIndex, int num) {
+    for (int i = startStationIndex; i < endStationIndex; i++) {
+      if (seats[trainNum * (stationNum - 1) + i] < num) {
+        return -1;
+      }
+    }
+    for (int i = startStationIndex; i < endStationIndex; i++) {
+      seats[trainNum * (stationNum - 1) + i] -= num;
+    }
+    return num * (prices[endStationIndex] - prices[startStationIndex]);
   }
 };
 

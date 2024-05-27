@@ -2,12 +2,8 @@
 #include "SimpleFile.hpp"
 #include "PersistentMultiMap.hpp"
 
-struct Data {
-  int index;
-  int val;
-};
-
 int main() {
+  freopen("input.txt", "r", stdin);
   Commands::init();
   while (Commands::running) {
     std::string input;

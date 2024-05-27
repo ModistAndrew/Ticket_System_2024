@@ -192,15 +192,35 @@ namespace Commands {
     if (!user.present) {
       return "-1";
     }
+    TrainInfo &trainInfo = train.value;
+    int startStation = trainInfo.getStationIndex(command.getParam('f'));
+    int endStation = trainInfo.getStationIndex(command.getParam('t'));
+    int trainNum = trainInfo.searchTrainNum(parseDate(command.getParam('d')), startStation);
+    if(trainNum < 0 || trainNum >= trainInfo.totalCount) {
+      return "-1";
+    }
+    int count = command.getIntParam('n');
+    bool shouldQueue = command.getParam('q') == "true";
+    int price = trainInfo.buy(trainNum, startStation, endStation, count);
     Order order = {
-        command.getParam('u'),
-        command.getParam('i'),
-        0,
-        parseDate(command.getParam('d')),
-        command.getIntParam('f'),
-        command.getIntParam('t'),
-        command.getIntParam('n')
+      userID,
+      trainID,
+      price < 0 ? 1 : 0,
+      trainNum,
+      startStation,
+      endStation,
+      count
     };
+    if(price < 0) {
+      if(shouldQueue) {
+        Orders::addOrder(order);
+        return "queue";
+      }
+      return "-1";
+    }
+    Orders::addOrder(order);
+    std::cout << price;
+    return "";
   }
 
   std::string exit(const Command &command) {
@@ -219,6 +239,7 @@ namespace Commands {
     commandMap["delete_train"] = deleteTrain;
     commandMap["release_train"] = releaseTrain;
     commandMap["query_train"] = queryTrain;
+    commandMap["buy_ticket"] = buyTicket;
   }
 
   std::string run(const std::string &s) {
