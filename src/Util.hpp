@@ -145,8 +145,6 @@ public:
 
   auto operator<=>(const FixedString &rhs) const = default;
 
-  bool operator==(const FixedString &rhs) const = default;
-
   int len() const {
     return strnlen(key, L);
   }

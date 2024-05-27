@@ -7,22 +7,33 @@
 
 #include "Util.hpp"
 #include "PersistentMultiMap.hpp"
-
-struct OrderInfo {
-  int status; //0: pending, 1: paid, 2: refunded
-  std::string trainID;
-  int date;
-  int from;
-  int to;
-  int num;
-  int next; //next order in the same user. store as a linked list
-};
+#include "PersistentSet.hpp"
 
 struct Order {
   String20 index; //user ID
-  int location; //where order data is stored
+  String20 trainID;
+  int status;
+  int startDate;
+  int from;
+  int to;
+  int num;
 };
 
-PersistentMultiMap<Order, OrderInfo, 1000000> orderMap("order", "order");
+struct OrderQueue {
+  String20 trainID;
+  int startDate;
+  int leafPos; //negative
+  int pos; //negative
+  auto operator<=>(const OrderQueue &rhs) const = default;
+};
 
+namespace Orders {
+  PersistentMultiMap<Order> orderMap("order");
+  PersistentSet<OrderQueue> orderQueueMap("order_queue");
+
+  void addOrder(const Order &order) {
+    orderMap.insert(order);
+    orderQueueMap.insert(OrderQueue{order.trainID, order.startDate, -1, -1});
+  }
+}
 #endif //TICKETSYSTEM2024_ORDER_HPP

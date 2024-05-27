@@ -23,10 +23,13 @@ class PersistentMultiMap { //use INDEX as key and T as value. Data can only be i
 
   class iterator {
     PersistentMultiMap *set;
-    LeafNode *leaf;
+    int leafPos;
     int pos;
+    LeafNode *leaf;
+
   public:
-    iterator(PersistentMultiMap *set, LeafNode *leaf, int pos) : set(set), leaf(leaf), pos(pos) {}
+    iterator(PersistentMultiMap *set, int leafPos, int pos) : set(set), leafPos(leafPos), pos(pos),
+                                                              leaf(set->getPtr(leafPos, false).leafNode()) {}
 
     iterator &operator++() {
       if (leaf == nullptr) {
@@ -34,7 +37,8 @@ class PersistentMultiMap { //use INDEX as key and T as value. Data can only be i
       }
       pos++;
       if (pos == leaf->size) {
-        leaf = leaf->next == -1 ? nullptr : set->getPtr(leaf->next, false).leafNode();
+        leafPos = leaf->next;
+        leaf = set->getPtr(leafPos, false).leafNode();
         pos = 0;
       }
       return *this;
@@ -71,10 +75,14 @@ class PersistentMultiMap { //use INDEX as key and T as value. Data can only be i
     bool end() {
       return leaf == nullptr;
     }
+
+    void markDirty() { //set current node as dirty
+      set->getPtr(leafPos, true);
+    }
   };
 
   iterator end() {
-    return iterator(this, nullptr, 0);
+    return iterator(this, -1, 0);
   }
 
   class NodePtr {
@@ -104,12 +112,11 @@ class PersistentMultiMap { //use INDEX as key and T as value. Data can only be i
       }
     }
 
-    iterator find(PersistentMultiMap *set,
-                  const INDEX &val) { //find first of the linked list under val. return end() if not found
+    iterator find(PersistentMultiMap *set, const INDEX &val, int loc) { //find first of the linked list under val. return end() if not found
       if (isLeaf) {
-        return leafNode()->find(set, val);
+        return leafNode()->find(set, val, loc);
       } else {
-        return treeNode()->find(set, val);
+        return treeNode()->find(set, val, loc);
       }
     }
   };
@@ -119,10 +126,10 @@ class PersistentMultiMap { //use INDEX as key and T as value. Data can only be i
     INDEX index[SIZE_1 - 1];
     int children[SIZE_1];
 
-    iterator find(PersistentMultiMap *set, const INDEX &val) { //find first no less than val
+    iterator find(PersistentMultiMap *set, const INDEX &val, int loc) { //find first no less than val
       //notice that we have (a, b] rather than [a, b) here in order to get the first element of the linked list with lower_bound
       int p = lower_bound(index, index + size - 1, val) - index;
-      return set->getPtr(children[p], false).find(set, val);
+      return set->getPtr(children[p], false).find(set, val, children[p]);
     }
 
     void insert(PersistentMultiMap *set, const T &val, TreeNode *parent, int pos) { //insert val into this node
@@ -162,10 +169,10 @@ class PersistentMultiMap { //use INDEX as key and T as value. Data can only be i
     T data[SIZE_2];
     int next = -1; //linked list
 
-    iterator find(PersistentMultiMap *set, const INDEX &val) { //find first no less than val
+    iterator find(PersistentMultiMap *set, const INDEX &val, int loc) { //find first no less than val
       int p = lower_index_bound(data, data + size, val) - data;
       if (p < size && data[p].index == val) {
-        return iterator(set, this, p);
+        return iterator(set, loc, p);
       }
       return set->end();
     }
@@ -188,7 +195,8 @@ class PersistentMultiMap { //use INDEX as key and T as value. Data can only be i
       memcpy(newNode.data, data + half, half * sizeof(T));
       newNode.next = next;
       next = set->add(newNode);
-      parent->insertChild(next, data[half - 1].index, pos); //notice that we have (a, b] rather than [a, b) here in order to get the first element of the linked list with lower_bound
+      parent->insertChild(next, data[half - 1].index,
+                          pos); //notice that we have (a, b] rather than [a, b) here in order to get the first element of the linked list with lower_bound
     }
   };
 
@@ -222,7 +230,7 @@ public:
   int length;
 
   explicit PersistentMultiMap(std::string file_name) :
-  treeNodeStorage(-1, file_name + "_tree"), leafNodeStorage(0, file_name + "_leaf") {
+    treeNodeStorage(-1, file_name + "_tree"), leafNodeStorage(0, file_name + "_leaf") {
     dummy.size = 1;
     dummy.children[0] = treeNodeStorage.info == -1 ? add(LeafNode()) : treeNodeStorage.info;
     length = leafNodeStorage.info;
@@ -247,14 +255,8 @@ public:
     length++;
   }
 
-  vector<T> find(const INDEX &val) {
-    vector<T> ret;
-    iterator it = getRoot().find(this, val);
-    while (!it.end() && it->index == val) {
-      ret.push_back(*it);
-      ++it;
-    }
-    return ret;
+  iterator find(const INDEX &val) {
+    return getRoot().find(this, val, dummy.children[0]);
   }
 };
 

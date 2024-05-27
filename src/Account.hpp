@@ -47,7 +47,7 @@ namespace AccountStorage {
 namespace Accounts {
   map<String20, Account> currentAccounts;
 
-  Optional<Account> get(const String20 &index) {
+  Optional<Account> getLogged(const String20 &index) {
     auto it = currentAccounts.find(index);
     return it == currentAccounts.end() ? Optional<Account>() : Optional<Account>(it->second);
   }
