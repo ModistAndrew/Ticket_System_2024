@@ -44,83 +44,6 @@ std::string toStringInt(int x, int minLength = 0) {
   return ret;
 }
 
-//vector shouldn't be empty and there should be no empty string
-vector<std::string> parseVector(const std::string &s, char delim) {
-  vector<std::string> ret;
-  std::string tmp;
-  for (char c: s) {
-    if (c == delim) {
-      ret.push_back(tmp); //we accept empty string
-      tmp.clear();
-    } else {
-      tmp.push_back(c);
-    }
-  }
-  ret.push_back(tmp);
-  return ret;
-}
-
-std::string toStringVector(const vector<std::string> &v, char delim) {
-  std::string ret;
-  for (int i = 0; i < v.size(); i++) {
-    if (i) {
-      ret += delim;
-    }
-    ret += v[i];
-  }
-  return ret;
-}
-
-//map empty vector to "_"
-vector<int> parseIntVector(const std::string &s, char delim = '|') {
-  if (s == "_") {
-    return {};
-  }
-  vector<int> ret;
-  std::string tmp;
-  for (char c: s) {
-    if (c == delim) {
-      ret.push_back(parseInt(tmp));
-      tmp.clear();
-    } else {
-      tmp.push_back(c);
-    }
-  }
-  ret.push_back(parseInt(tmp));
-  return ret;
-}
-
-std::string toStringIntVector(const vector<int> &v, char delim = '|') {
-  if (v.empty()) {
-    return "_";
-  }
-  std::string ret;
-  for (int i = 0; i < v.size(); i++) {
-    if (i) {
-      ret += delim;
-    }
-    ret += toStringInt(v[i]);
-  }
-  return ret;
-}
-
-//length is the length of each number. every number should >= 0
-vector<int> parseFixedIntVector(int length, const std::string &s) {
-  vector<int> ret;
-  for (int i = 0; i < s.length() / length; i++) {
-    ret.push_back(parseInt(s.substr(i * length, length)));
-  }
-  return ret;
-}
-
-std::string toFixedStringIntVector(int length, const vector<int> &v) {
-  std::string ret;
-  for (int i = 0; i < v.size(); i++) {
-    ret += toStringInt(i, length);
-  }
-  return ret;
-}
-
 int parseTime(const std::string &s) { //00:00 to 23:59
   return ((s[0] - '0') * 10 + (s[1] - '0')) * 60 + ((s[3] - '0') * 10 + (s[4] - '0'));
 }
@@ -156,7 +79,6 @@ int parseDate(const std::string &s) { //06-01 to 12-31
   }
 }
 
-
 std::string toStringDate(int x) { //06-01 to 12-31
   std::string ret;
   if (x < 30) {
@@ -183,6 +105,88 @@ std::string toStringDate(int x) { //06-01 to 12-31
   }
   ret.push_back(x / 10 + '0');
   ret.push_back(x % 10 + '0');
+  return ret;
+}
+
+//vector shouldn't be empty
+vector<std::string> parseVector(const std::string &s, char delim, int l) {
+  vector<std::string> ret(l);
+  std::string tmp;
+  int cnt = 0;
+  for (char c: s) {
+    if (c == delim) {
+      ret[cnt++] = tmp; //we accept empty string
+      tmp.clear();
+    } else {
+      tmp.push_back(c);
+    }
+  }
+  ret[cnt] = tmp;
+  return ret;
+}
+
+//vector shouldn't be empty
+std::string toStringVector(const vector<std::string> &v, char delim, int l) {
+  std::string ret;
+  for (int i = 0; i < l; i++) {
+    if (i) {
+      ret += delim;
+    }
+    ret += v[i];
+  }
+  return ret;
+}
+
+//map empty vector to "_"
+vector<int> parseIntVector(const std::string &s, char delim, int l) {
+  vector<int> ret(l);
+  if (s == "_") {
+    return ret;
+  }
+  std::string tmp;
+  int cnt = 0;
+  for (char c: s) {
+    if (c == delim) {
+      ret[cnt++] = parseInt(tmp);
+      tmp.clear();
+    } else {
+      tmp.push_back(c);
+    }
+  }
+  ret[cnt] = parseInt(tmp);
+  return ret;
+}
+
+//map empty vector to "_"
+std::string toStringIntVector(const vector<int> &v, char delim, int l) {
+  if (l == 0) {
+    return "_";
+  }
+  std::string ret;
+  for (int i = 0; i < l; i++) {
+    if (i) {
+      ret += delim;
+    }
+    ret += toStringInt(v[i]);
+  }
+  return ret;
+}
+
+//length is the length of each number.
+vector<int> parseFixedIntVector(int length, const std::string &s, int l) {
+  vector<int> ret(l);
+  for (int i = 0; i < l; i++) {
+    ret[i] = parseInt(s.substr(i * length, length));
+  }
+  return ret;
+}
+
+//length is the length of each number.
+std::string toFixedStringIntVector(int length, const vector<int> &v, int l) {
+  std::string ret;
+  for (int i = 0; i < l; i++) {
+    ret += toStringInt(v[i], length);
+  }
   return ret;
 }
 

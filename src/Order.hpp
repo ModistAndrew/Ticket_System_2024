@@ -13,7 +13,7 @@ struct Order {
   String20 index; //user ID
   String20 trainID;
   int status;
-  int startDate;
+  int trainNum;
   int from;
   int to;
   int num;
@@ -21,7 +21,7 @@ struct Order {
 
 struct OrderQueue {
   String20 trainID;
-  int startDate;
+  int trainNum;
   int leafPos; //negative
   int pos; //negative
   auto operator<=>(const OrderQueue &rhs) const = default;
@@ -33,7 +33,7 @@ namespace Orders {
 
   void addOrder(const Order &order) {
     orderMap.insert(order);
-    orderQueueMap.insert(OrderQueue{order.trainID, order.startDate, -1, -1});
+    orderQueueMap.insert(OrderQueue{order.trainID, order.trainNum, -1, -1});
   }
 }
 #endif //TICKETSYSTEM2024_ORDER_HPP

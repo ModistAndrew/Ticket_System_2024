@@ -5,20 +5,8 @@
 
 template<typename T>
 class vector {
+  const size_t length;
   T *data;
-  size_t length;
-  size_t capacity;
-
-  void resize(size_t newSize) {
-    T *newData = (T *) malloc(newSize * sizeof(T));
-    for (size_t i = 0; i < length; i++) {
-      new(newData + i) T(std::move(data[i]));
-      data[i].~T();
-    }
-    free(data);
-    data = newData;
-    capacity = newSize;
-  }
 
 public:
   class const_iterator;
@@ -187,34 +175,16 @@ public:
     }
   };
 
-  vector() : length(), capacity(), data() {
-    resize(1);
-  }
+  vector(size_t size = 0) : length(size), data(new T[length]) {}
 
-  vector(const vector &other) {
-    length = other.length;
-    capacity = other.capacity;
-    data = (T *) malloc(capacity * sizeof(T));
+  vector(const vector &other) : length(other.length), data(new T[length]) {
     for (size_t i = 0; i < length; i++) {
-      new(data + i) T(other.data[i]);
+      data[i] = other.data[i];
     }
   }
 
-  vector(vector &&other) noexcept {
-    length = other.length;
-    capacity = other.capacity;
-    data = other.data;
+  vector(vector &&other) noexcept : length(other.length), data(other.data) {
     other.data = nullptr;
-  }
-
-  ~vector() {
-    if (data == nullptr) {
-      return;
-    }
-    for (size_t i = 0; i < length; i++) {
-      data[i].~T();
-    }
-    free(data);
   }
 
   vector &operator=(const vector &other) {
@@ -231,6 +201,10 @@ public:
       new(this) vector(other);
     }
     return *this;
+  }
+
+  ~vector() {
+    delete[] data;
   }
 
   T &at(const size_t &pos) {
@@ -302,55 +276,6 @@ public:
   void clear() {
     this->~vector();
     new(this) vector();
-  }
-
-  iterator insert(iterator pos, const T &value) {
-    if (length - (pos.ptr - data) > 0) {
-      memmove(pos.ptr + 1, pos.ptr, (length - (pos.ptr - data)) * sizeof(T));
-    }
-    new(pos.ptr) T(value);
-    length++;
-    if (length == capacity) {
-      resize(capacity * 2);
-    }
-    return pos;
-  }
-
-  iterator insert(const size_t &ind, const T &value) {
-    if (ind > length) {
-      throw IndexOutOfBound();
-    }
-    return insert(begin() + ind, value);
-  }
-
-  iterator erase(iterator pos) {
-    pos.ptr->~T();
-    if (length - (pos.ptr - data) - 1 > 0) {
-      memmove(pos.ptr, pos.ptr + 1, (length - (pos.ptr - data) - 1) * sizeof(T));
-    }
-    length--;
-    if (length * 4 <= capacity) {
-      resize(capacity / 2);
-    }
-    return pos;
-  }
-
-  iterator erase(const size_t &ind) {
-    if (ind >= length) {
-      throw IndexOutOfBound();
-    }
-    return erase(begin() + ind);
-  }
-
-  void push_back(const T &value) {
-    insert(end(), value);
-  }
-
-  void pop_back() {
-    if (length == 0) {
-      throw ContainerEmpty();
-    }
-    erase(end() - 1);
   }
 };
 

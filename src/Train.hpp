@@ -5,6 +5,8 @@
 #ifndef TICKETSYSTEM2024_TRAIN_HPP
 #define TICKETSYSTEM2024_TRAIN_HPP
 
+#include <utility>
+
 #include "PersistentMap.hpp"
 #include "SimpleFile.hpp"
 #include "Util.hpp"
@@ -18,67 +20,66 @@ struct TrainInfo {
   std::string *base; //may be nullptr when first storing
   std::string trainID;
   int stationNum;
-  vector<std::string> stationNames; //stationName[0] is the start station. size == stationNum
   int seatNum;
-  vector<int> prices; //prices[0] = 0
-  int startTime; //start time in minutes, 0 - 1439
-  vector<int> arrivalTimes;
-  vector<int> departureTimes; //departureTimes[0] = 0
-  vector<int> saleDate; //start and end day from 20240601 to 20240831. converted to an integer 0 - 91. size == 2
+  vector<std::string> stationNames; //stationName[0] is the start station. size == stationNum
+  vector<int> prices; //prices from start station to station[i]. size == stationNum. 0 for start station
+  vector<int> arrivalTimes; //time from start time to arrival at station[i]. size == stationNum. invalid for start station
+  vector<int> departureTimes; //time from start time to departure from station[i]. size == stationNum. invalid for end station. start time for start station
+  int firstStartDate;
+  int totalCount; //total number of trains. from startDate to startDate + totalDate - 1
   std::string type; //type of the train
   vector<int> seats; //seats[i * (stationNum - 1) + j] is the number of seats of station[j] on the ith train. size == train_num * (stationNum - 1)
 
   TrainInfo() = default;
 
-  TrainInfo(std::string *s) {
-    base = s;
-    vector<std::string> v = parseVector(*s, ' ');
-    trainID = v[0];
-    stationNum = parseInt(v[1]);
-    stationNames = parseVector(v[2], '|');
-    seatNum = parseInt(v[3]);
-    prices = parseIntVector(v[4]);
-    startTime = parseInt(v[5]);
-    arrivalTimes = parseIntVector(v[6]);
-    departureTimes = parseIntVector(v[7]);
-    saleDate = parseIntVector(v[8]);
-    type = v[9];
-    seats = parseFixedIntVector(6, v[10]);
-  }
-
-  std::string toString() const {
-    vector<std::string> v;
-    v.push_back(trainID);
-    v.push_back(toStringInt(stationNum));
-    v.push_back(toStringVector(stationNames, '|'));
-    v.push_back(toStringInt(seatNum));
-    v.push_back(toStringIntVector(prices));
-    v.push_back(toStringInt(startTime));
-    v.push_back(toStringIntVector(arrivalTimes));
-    v.push_back(toStringIntVector(departureTimes));
-    v.push_back(toStringIntVector(saleDate));
-    v.push_back(type);
-    v.push_back(toFixedStringIntVector(6, seats));
-    return toStringVector(v, ' ');
-  }
-
-  void initSeats() {
-    int size = (stationNum - 1) * (saleDate[1] - saleDate[0] + 1);
-    for (int i = 0; i < size; i++) {
-      seats.push_back(seatNum);
+  TrainInfo(std::string trainID, int stationNum, int seatNum, int firstStartDate, int totalCount, std::string type) :
+    trainID(std::move(trainID)), stationNum(stationNum), seatNum(seatNum), firstStartDate(firstStartDate),
+    totalCount(totalCount), type(std::move(type)),
+    stationNames(stationNum), prices(stationNum), arrivalTimes(stationNum), departureTimes(stationNum),
+    seats(totalCount * (stationNum - 1)) {
+    for (int i = 0; i < totalCount * (stationNum - 1); i++) {
+      seats[i] = seatNum;
     }
   }
 
-  bool checkDate(int startDate) {
-    return startDate >= saleDate[0] && startDate <= saleDate[1];
+  TrainInfo(std::string *s) {
+    base = s;
+    vector<std::string> v = parseVector(*s, ' ', 11);
+    trainID = v[0];
+    stationNum = parseInt(v[1]);
+    seatNum = parseInt(v[2]);
+    stationNames = parseVector(v[3], '|', stationNum);
+    prices = parseIntVector(v[4], '|', stationNum);
+    arrivalTimes = parseIntVector(v[5], '|', stationNum);
+    departureTimes = parseIntVector(v[6], '|', stationNum);
+    firstStartDate = parseInt(v[7]);
+    totalCount = parseInt(v[8]);
+    type = v[9];
+    seats = parseFixedIntVector(6, v[10], totalCount * (stationNum - 1));
   }
 
-  int *getSeats(int startDate) {
-    return &seats[(startDate - saleDate[0]) * (stationNum - 1)];
+  std::string toString() const {
+    vector<std::string> v(11);
+    v[0] = trainID;
+    v[1] = toStringInt(stationNum);
+    v[2] = toStringInt(seatNum);
+    v[3] = toStringVector(stationNames, '|', stationNum);
+    v[4] = toStringIntVector(prices, '|', stationNum);
+    v[5] = toStringIntVector(arrivalTimes, '|', stationNum);
+    v[6] = toStringIntVector(departureTimes, '|', stationNum);
+    v[7] = toStringInt(firstStartDate);
+    v[8] = toStringInt(totalCount);
+    v[9] = type;
+    v[10] = toFixedStringIntVector(6, seats, totalCount * (stationNum - 1));
+    return toStringVector(v, ' ', 11);
   }
 
   void store() {
     *base = toString();
+  }
+
+  int toTrainNum(int startDate) {
+    return startDate - firstStartDate;
   }
 
   int getStationIndex(const std::string &stationName) {
@@ -90,13 +91,16 @@ struct TrainInfo {
     throw;
   }
 
-  Chrono getFirstDeparture(int stationIndex) {
-    Chrono chrono = {saleDate[0], startTime};
-    for (int i = 0; i < stationIndex; i++) {
-      chrono += arrivalTimes[i];
-      chrono += departureTimes[i];
-    }
-    return chrono;
+  Chrono getArrival(int trainNum, int stationIndex) {
+    return stationIndex == 0 ? Chrono() : Chrono(firstStartDate + trainNum, arrivalTimes[stationIndex]);
+  }
+
+  Chrono getDeparture(int trainNum, int stationIndex) {
+    return stationIndex == stationNum - 1 ? Chrono() : Chrono(firstStartDate + trainNum, departureTimes[stationIndex]);
+  }
+
+  int getSeat(int trainNum, int stationIndex) { //stationIndex should be less than stationNum - 1
+    return seats[trainNum * (stationNum - 1) + stationIndex];
   }
 };
 

@@ -67,18 +67,18 @@ T *upper_index_bound(T *first, T *last, const INDEX &val) {
 struct Chrono {
   int date;
   int time;
-  inline static const std::string EMPTY = "xx-xx xx:xx";
-  Chrono(int date, int time) : date(date), time(time) {}
 
-  Chrono operator+=(int minutes) {
-    time += minutes;
-    date += time / 1440;
-    time %= 1440;
-    return *this;
-  }
+  Chrono() : date(-1), time(-1) {}
 
-  std::string toString() const {
-    return toStringDate(date) + ' ' + toStringTime(time);
+  Chrono(int d, int t) : date(d + t / 1440), time(t % 1440) {}
+
+  friend std::ostream &operator<<(std::ostream &out, const Chrono &rhs) {
+    if (rhs.date < 0) {
+      out << "xx-xx xx:xx";
+    } else {
+      out << toStringDate(rhs.date) << ' ' << toStringTime(rhs.time);
+    }
+    return out;
   }
 };
 
@@ -174,4 +174,5 @@ public:
 
 using String20 = FixedString<20>;
 using String30 = FixedString<30>;
+
 #endif //TICKET_SYSTEM_2024_UTIL_HPP

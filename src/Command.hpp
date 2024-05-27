@@ -118,23 +118,33 @@ namespace Commands {
   }
 
   std::string addTrain(const Command &command) {
-    TrainInfo newTrain;
-    newTrain.trainID = command.getParam('i');
-    newTrain.stationNum = command.getIntParam('n');
-    newTrain.seatNum = command.getIntParam('m');
-    newTrain.stationNames = parseVector(command.getParam('s'), '|');
-    newTrain.prices = parseIntVector(command.getParam('p'), '|');
-    newTrain.startTime = parseTime(command.getParam('x'));
-    newTrain.arrivalTimes = parseIntVector(command.getParam('t'), '|');
-    newTrain.departureTimes = parseIntVector(command.getParam('o'), '|');
-    vector<int> saleDate;
-    vector<string> v = parseVector(command.getParam('d'), '|');
-    for (const string &s: v) {
-      saleDate.push_back(parseDate(s));
+    int stationNum = command.getIntParam('n');
+    vector<string> v = parseVector(command.getParam('d'), '|', 2);
+    int startDate = parseDate(v[0]);
+    int endDate = parseDate(v[1]);
+    TrainInfo newTrain(command.getParam('i'), stationNum, command.getIntParam('m'),
+                       startDate, endDate - startDate + 1, command.getParam('y'));
+    newTrain.stationNames = parseVector(command.getParam('s'), '|', stationNum);
+    vector<int> prices = parseIntVector(command.getParam('p'), '|', stationNum - 1);
+    int currentPrice = 0;
+    for(int i = 0; i < stationNum; i++) {
+      newTrain.prices[i] = currentPrice;
+      if (i < stationNum - 1) {
+        currentPrice += prices[i];
+      }
     }
-    newTrain.saleDate = saleDate;
-    newTrain.type = command.getParam('y');
-    newTrain.initSeats();
+    vector<int> travelTimes = parseIntVector(command.getParam('t'), '|', stationNum - 1);
+    vector<int> stopoverTimes = parseIntVector(command.getParam('o'), '|', stationNum - 2);
+    int currentTime = parseTime(command.getParam('x'));
+    newTrain.departureTimes[0] = currentTime;
+    for(int i=1; i<stationNum; i++) {
+      currentTime += travelTimes[i-1];
+      newTrain.arrivalTimes[i] = currentTime;
+      if(i < stationNum - 1) {
+        currentTime += stopoverTimes[i-1];
+        newTrain.departureTimes[i] = currentTime;
+      }
+    }
     return Trains::addTrain(newTrain) ? "0" : "-1";
   }
 
@@ -151,29 +161,21 @@ namespace Commands {
     if (!train.present) {
       return "-1";
     }
-    int date = parseDate(command.getParam('d'));
     TrainInfo &trainInfo = train.value;
-    if (!trainInfo.checkDate(date)) {
+    int trainNum = trainInfo.toTrainNum(parseDate(command.getParam('d')));
+    if(trainNum < 0 || trainNum >= trainInfo.totalCount) {
       return "-1";
     }
     std::cout << trainInfo.trainID << ' ' << trainInfo.type << '\n';
-    Chrono currentChrono = {date, trainInfo.startTime};
-    int currentPrice = 0;
-    int *seats = trainInfo.getSeats(date);
     for (int i = 0; i < trainInfo.stationNum; i++) {
       std::cout << trainInfo.stationNames[i] << ' '
-                << (i == 0 ? Chrono::EMPTY : currentChrono.toString()) << " -> ";
-      if (i > 0 && i < trainInfo.stationNum - 1) {
-        currentChrono += trainInfo.departureTimes[i - 1];
-      }
-      std::cout << (i == trainInfo.stationNum - 1 ? Chrono::EMPTY : currentChrono.toString()) << ' '
-                << currentPrice << ' '
-                << (i == trainInfo.stationNum - 1 ? "x" : toStringInt(*seats));
-      if (i < trainInfo.stationNum - 1) {
-        currentChrono += trainInfo.arrivalTimes[i];
-        currentPrice += trainInfo.prices[i];
-        seats++;
-        std::cout << '\n';
+                << trainInfo.getArrival(trainNum, i) << " -> "
+                << trainInfo.getDeparture(trainNum, i) << ' '
+                << trainInfo.prices[i] << ' ';
+      if(i < trainInfo.stationNum - 1) {
+        std::cout << trainInfo.getSeat(trainNum, i) << '\n';
+      } else {
+        std::cout << "x";
       }
     }
     return "";
