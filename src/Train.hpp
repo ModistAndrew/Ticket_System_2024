@@ -26,7 +26,7 @@ struct TrainInfo {
   vector<int> stopoverTimes; //stopoverTimes[0] is the stopover time at station[1]. in minutes. size == stationNum - 2
   vector<int> saleDate; //start and end day from 20240601 to 20240831. converted to an integer 0 - 91. size == 2
   std::string type; //type of the train
-  std::vector<int> seats; //seats[i * (stationNum - 1) + j] is the number of seats of station[j] on the ith train. size == train_num * (stationNum - 1)
+  vector<int> seats; //seats[i * (stationNum - 1) + j] is the number of seats of station[j] on the ith train. size == train_num * (stationNum - 1)
 
   TrainInfo() = default;
 

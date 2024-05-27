@@ -10,7 +10,13 @@ class vector {
   size_t capacity;
 
   void resize(size_t newSize) {
-    data = (T *) realloc(data, newSize * sizeof(T));
+    T *newData = (T *) malloc(newSize * sizeof(T));
+    for (size_t i = 0; i < length; i++) {
+      new(newData + i) T(std::move(data[i]));
+      data[i].~T();
+    }
+    free(data);
+    data = newData;
     capacity = newSize;
   }
 
@@ -194,7 +200,17 @@ public:
     }
   }
 
+  vector(vector &&other) noexcept {
+    length = other.length;
+    capacity = other.capacity;
+    data = other.data;
+    other.data = nullptr;
+  }
+
   ~vector() {
+    if (data == nullptr) {
+      return;
+    }
     for (size_t i = 0; i < length; i++) {
       data[i].~T();
     }
@@ -202,6 +218,14 @@ public:
   }
 
   vector &operator=(const vector &other) {
+    if (this != &other) {
+      this->~vector();
+      new(this) vector(other);
+    }
+    return *this;
+  }
+
+  vector &operator=(vector &&other) noexcept {
     if (this != &other) {
       this->~vector();
       new(this) vector(other);

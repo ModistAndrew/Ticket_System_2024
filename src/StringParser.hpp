@@ -4,9 +4,9 @@
 
 #ifndef TICKETSYSTEM2024_STRINGPARSER_HPP
 #define TICKETSYSTEM2024_STRINGPARSER_HPP
+
 #include <string>
-#include <vector>
-using std::vector;
+#include "vector.hpp"
 
 int parseInt(const std::string &s) {
   int x = 0;
@@ -73,7 +73,7 @@ std::string toStringVector(const vector<std::string> &v, char delim) {
 
 //map empty vector to "_"
 vector<int> parseIntVector(const std::string &s, char delim = '|') {
-  if(s == "_") {
+  if (s == "_") {
     return {};
   }
   vector<int> ret;
@@ -91,7 +91,7 @@ vector<int> parseIntVector(const std::string &s, char delim = '|') {
 }
 
 std::string toStringIntVector(const vector<int> &v, char delim = '|') {
-  if(v.empty()) {
+  if (v.empty()) {
     return "_";
   }
   std::string ret;
@@ -115,7 +115,7 @@ vector<int> parseFixedIntVector(int length, const std::string &s) {
 
 std::string toFixedStringIntVector(int length, const vector<int> &v) {
   std::string ret;
-  for (int i : v) {
+  for (int i = 0; i < v.size(); i++) {
     ret += toStringInt(i, length);
   }
   return ret;
@@ -151,7 +151,7 @@ int parseDate(const std::string &s) { //06-01 to 12-31
     return day + 121;
   } else if (s[1] == '1') {
     return day + 152;
-  } else  {
+  } else {
     return day + 182;
   }
 }
