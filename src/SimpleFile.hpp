@@ -15,6 +15,7 @@ using std::fstream;
 using std::ifstream;
 using std::ofstream;
 
+template<int CACHE_SIZE = 10000>
 class SimpleFile { //you can write a string at end of file and read a string randomly
   fstream file;
   string fileName;
@@ -23,6 +24,7 @@ class SimpleFile { //you can write a string at end of file and read a string ran
     bool dirty = false;
   };
   map<int, Cache *> cacheMap;
+  int cacheCount = 0;
 public:
   SimpleFile(const string &file_name) : fileName("storage/" + file_name + ".dat") {
     if (!std::filesystem::exists(fileName)) {
@@ -31,6 +33,20 @@ public:
       file.close();
     }
     file.open(fileName, std::ios::in | std::ios::out | std::ios::binary);
+  }
+
+  void checkCache() {
+    if(cacheCount * sizeof(Cache) > CACHE_SIZE) {
+      for(auto it = cacheMap.begin(); it != cacheMap.end(); it++) {
+        if(it->second->dirty) {
+          file.seekp(it->first);
+          file << it->second->data;
+        }
+        delete it->second;
+        cacheMap.erase(it);
+      }
+      cacheCount = 0;
+    }
   }
 
   ~SimpleFile() {
@@ -56,6 +72,7 @@ public:
       it = cacheMap.insert({pos, new Cache()}).first;
       file.seekg(pos);
       std::getline(file, it->second->data);
+      cacheCount++;
     }
     if (dirty) {
       it->second->dirty = true;

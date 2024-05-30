@@ -11,6 +11,7 @@ void checkCache() {
   Trains::unreleasedTrainMap.checkCache();
   Trains::releasedTrainMap.checkCache();
   Trains::stationMap.checkCache();
+  Trains::trainDataFile.checkCache();
 }
 
 int main() {
