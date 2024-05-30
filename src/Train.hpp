@@ -321,6 +321,9 @@ namespace Trains {
     priority_queue<pair<Line, Line>> queue(isPrice ? Line::cmpPricePair : Line::cmpTimePair);
     for (const auto &trainFrom: trainsFrom) {
       for (const auto &trainTo: trainsTo) {
+        if(trainFrom.trainID == trainTo.trainID) {
+          continue;
+        }
         map<String40, int> stationIndicesFrom, stationIndicesTo;
         for (int i = 0; i < trainFrom.stationNum; i++) {
           stationIndicesFrom[trainFrom.stationNames[i]] = i;

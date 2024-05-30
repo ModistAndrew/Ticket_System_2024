@@ -294,6 +294,11 @@ namespace Commands {
     if (it == commandMap.end()) {
       throw;
     }
+
+    if(command.timestamp == "[750566]") {
+      std::cerr << "haha" << std::endl;
+    }
+
     std::cout << command.timestamp << ' ';
     return it->second(command);
   }
