@@ -358,6 +358,7 @@ public:
 
   ~PersistentMap() {
     treeNodeStorage.info = dummy.children[0];
+    leafNodeStorage.info = length;
   }
 
   bool insert(const T &val) {

@@ -34,7 +34,6 @@ public:
   }
 
   ~SimpleFile() {
-    file.close();
     for (auto i: cacheMap) {
       if (i.second->dirty) {
         file.seekp(i.first);
@@ -42,6 +41,7 @@ public:
       }
       delete i.second;
     }
+    file.close();
   }
 
   int write(const std::string &str) {

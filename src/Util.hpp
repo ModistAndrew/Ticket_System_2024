@@ -68,18 +68,19 @@ struct Chrono {
   int date;
   int time;
 
-  Chrono() : date(-1), time(-1) {}
+  Chrono() : date(0), time(-1) {}
 
   Chrono(int d, int t) : date(d + t / 1440), time(t % 1440) {}
 
   friend std::ostream &operator<<(std::ostream &out, const Chrono &rhs) {
-    if (rhs.date < 0) {
+    if (rhs.time < 0) {
       out << "xx-xx xx:xx";
     } else {
       out << toStringDate(rhs.date) << ' ' << toStringTime(rhs.time);
     }
     return out;
   }
+
 };
 
 template<class T1, class T2>
@@ -174,5 +175,6 @@ public:
 
 using String20 = FixedString<20>;
 using String30 = FixedString<30>;
+using String40 = FixedString<40>;
 
 #endif //TICKET_SYSTEM_2024_UTIL_HPP

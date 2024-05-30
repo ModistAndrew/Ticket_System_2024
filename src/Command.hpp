@@ -205,10 +205,15 @@ namespace Commands {
     Order order = {
       userID,
       trainID,
-      price < 0 ? 1 : 0,
       trainNum,
+      price < 0 ? 1 : 0,
       startStation,
+      command.getParam('f'),
+      trainInfo.getDeparture(trainNum, startStation),
       endStation,
+      command.getParam('t'),
+      trainInfo.getArrival(trainNum, endStation),
+      price,
       count
     };
     if(price < 0) {
@@ -220,6 +225,15 @@ namespace Commands {
     }
     Orders::addOrder(order);
     std::cout << price;
+    return "";
+  }
+
+  std::string queryOrder(const Command &command) {
+    auto user = Accounts::getLogged(command.getParam('u'));
+    if (!user.present) {
+      return "-1";
+    }
+    Orders::printOrders(user.value.index);
     return "";
   }
 
@@ -240,6 +254,7 @@ namespace Commands {
     commandMap["release_train"] = releaseTrain;
     commandMap["query_train"] = queryTrain;
     commandMap["buy_ticket"] = buyTicket;
+    commandMap["query_order"] = queryOrder;
   }
 
   std::string run(const std::string &s) {

@@ -117,6 +117,7 @@ struct TrainInfo {
     for (int i = startStationIndex; i < endStationIndex; i++) {
       seats[trainNum * (stationNum - 1) + i] -= num;
     }
+    store();
     return num * (prices[endStationIndex] - prices[startStationIndex]);
   }
 };
