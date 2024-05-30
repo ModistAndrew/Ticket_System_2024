@@ -8,6 +8,7 @@
 #include "Util.hpp"
 #include "PersistentMultiMap.hpp"
 #include "PersistentSet.hpp"
+#include "Train.hpp"
 
 struct Order {
   String20 index; //user ID
@@ -43,9 +44,23 @@ struct Order {
 struct OrderQueue {
   String20 trainID;
   int trainNum;
-  int leafPos; //negative
-  int pos; //negative
-  auto operator<=>(const OrderQueue &rhs) const = default;
+  int leafPos;
+  int pos;
+
+  auto operator<=>(const OrderQueue &rhs) const {
+    if (auto cmp = trainID <=> rhs.trainID; cmp != 0) {
+      return cmp;
+    }
+    if (auto cmp = trainNum <=> rhs.trainNum; cmp != 0) {
+      return cmp;
+    }
+    if (auto cmp = rhs.leafPos <=> leafPos; cmp != 0) {
+      return cmp;
+    }
+    return rhs.pos <=> pos;
+  }
+
+  bool operator==(const OrderQueue &rhs) const = default;
 };
 
 namespace Orders {
@@ -56,7 +71,7 @@ namespace Orders {
     orderMap.insert(order);
     if (order.status == 1) {
       auto it = orderMap.find(order.index); //point to the last order which has just been inserted
-      orderQueueMap.insert(OrderQueue{order.trainID, order.trainNum, -it.getLeafPos(), -it.getPos()});
+      orderQueueMap.insert(OrderQueue{order.trainID, order.trainNum, it.getLeafPos(), it.getPos()});
     }
   }
 
@@ -73,6 +88,40 @@ namespace Orders {
       std::cout << '\n' << *it2;
       ++it2;
     }
+  }
+
+  bool refundOrder(const String20 &id, int num) {
+    auto itNow = orderMap.find(id);
+    while (!itNow.end() && itNow->index == id && --num) {
+      ++itNow;
+    }
+    if (itNow.end() || itNow->index != id) {
+      return false;
+    }
+    itNow.markDirty();
+    itNow->status = 2;
+    if (itNow->status > 0) {
+      return true;
+    }
+    auto train = Trains::getTrain(itNow->trainID, true, true);
+    if (!train.present) {
+      throw;
+    }
+    TrainInfo &trainInfo = train.value;
+    trainInfo.refund(itNow->trainNum, itNow->fromId, itNow->toId, itNow->num);
+    auto itQueue = orderQueueMap.find({itNow->trainID, itNow->trainNum, 0, 0});
+    while (!itQueue.end() && itQueue->trainID == itNow->trainID && itQueue->trainNum == itNow->trainNum) {
+      auto itQueueRef = orderMap.create(itQueue->leafPos, itQueue->pos);
+      if (itQueueRef->status == 1) {
+        if (trainInfo.buy(itQueueRef->trainNum, itQueueRef->fromId, itQueueRef->toId, itQueueRef->num) >= 0) {
+          itQueueRef.markDirty();
+          itQueueRef->status = 0;
+          return true;
+        }
+      }
+      ++itQueue;
+    }
+    return true;
   }
 }
 #endif //TICKETSYSTEM2024_ORDER_HPP

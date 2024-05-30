@@ -15,7 +15,7 @@
 
 struct Train {
   String20 index; //train ID
-  int location; //where train data is stored
+  int trainData; //where train data is stored
 };
 
 struct TrainInfo {
@@ -134,11 +134,18 @@ struct TrainInfo {
     store();
     return num * getPrice(startStationIndex, endStationIndex);
   }
+
+  void refund(int trainNum, int startStationIndex, int endStationIndex, int num) {
+    for (int i = startStationIndex; i < endStationIndex; i++) {
+      seats[trainNum * (stationNum - 1) + i] += num;
+    }
+    store();
+  }
 };
 
 struct Station {
   String40 index; //station name
-  int trainLocation; //where train data is stored
+  int trainData; //where train data is stored
   int stationNum; //index of the station in the train
   auto operator<=>(const Station &rhs) const = default;
 };
@@ -198,9 +205,9 @@ namespace Trains {
     if (!releasedTrainMap.insert(train)) {
       throw;
     }
-    TrainInfo trainInfo = TrainInfo(trainDataFile.get(train.location, false));
+    TrainInfo trainInfo = TrainInfo(trainDataFile.get(train.trainData, false));
     for (int i = 0; i < trainInfo.stationNum; i++) {
-      stationMap.insert(Station{trainInfo.stationNames[i], train.location, i});
+      stationMap.insert(Station{trainInfo.stationNames[i], train.trainData, i});
     }
     return true;
   }
@@ -209,23 +216,23 @@ namespace Trains {
     if (!shouldRelease) {
       auto it1 = unreleasedTrainMap.find(index);
       if (it1.second) {
-        return {TrainInfo(trainDataFile.get(it1.first->location, dirty))};
+        return {TrainInfo(trainDataFile.get(it1.first->trainData, dirty))};
       }
     }
     auto it2 = releasedTrainMap.find(index);
     if (it2.second) {
-      return {TrainInfo(trainDataFile.get(it2.first->location, dirty))};
+      return {TrainInfo(trainDataFile.get(it2.first->trainData, dirty))};
     }
     return {};
   }
 
   void queryTicket(const String40 &from, const String40 &to, int date, bool isPrice) {
-    auto it1 = stationMap.find({from, -1, -1});
-    auto it2 = stationMap.find({to, -1, -1});
+    auto it1 = stationMap.find({from, 0, 0});
+    auto it2 = stationMap.find({to, 0, 0});
     priority_queue<Line> queue(isPrice ? Line::cmpPrice : Line::cmpTime);
     while (!it1.end() && it1->index == from && !it2.end() && it2->index == to) {
-      if (it1->trainLocation == it2->trainLocation && it1->stationNum < it2->stationNum) {
-        TrainInfo trainInfo = TrainInfo(trainDataFile.get(it1->trainLocation, false));
+      if (it1->trainData == it2->trainData && it1->stationNum < it2->stationNum) {
+        TrainInfo trainInfo = TrainInfo(trainDataFile.get(it1->trainData, false));
         int trainNum = trainInfo.searchTrainNum(date, it1->stationNum);
         if (trainNum >= 0 && trainNum < trainInfo.totalCount) {
           Chrono departure = trainInfo.getDeparture(trainNum, it1->stationNum);
@@ -241,7 +248,7 @@ namespace Trains {
           }
         }
       }
-      if (it1->trainLocation < it2->trainLocation) {
+      if (it1->trainData < it2->trainData) {
         it1++;
       } else {
         it2++;

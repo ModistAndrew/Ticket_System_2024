@@ -389,7 +389,6 @@ public:
   iterator find(const T &val) { //return the iterator first no less than val
     return getRoot().find(this, val);
   }
-
 };
 
 #endif //TICKETSYSTEM2024_PERSISTENT_SET_HPP

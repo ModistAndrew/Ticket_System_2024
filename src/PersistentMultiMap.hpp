@@ -266,6 +266,10 @@ public:
   iterator find(const INDEX &val) {
     return getRoot().find(this, val, dummy.children[0]);
   }
+
+  iterator create(int leafPos, int pos) {
+    return iterator(this, leafPos, pos);
+  }
 };
 
 #endif //TICKET_SYSTEM_2024_PERSISTENT_MULTI_MAP_HPP

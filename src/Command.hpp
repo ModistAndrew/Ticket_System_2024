@@ -127,7 +127,7 @@ namespace Commands {
     newTrain.stationNames = parseVector(command.getParam('s'), '|', stationNum);
     vector<int> prices = parseIntVector(command.getParam('p'), '|', stationNum - 1);
     int currentPrice = 0;
-    for(int i = 0; i < stationNum; i++) {
+    for (int i = 0; i < stationNum; i++) {
       newTrain.prices[i] = currentPrice;
       if (i < stationNum - 1) {
         currentPrice += prices[i];
@@ -137,11 +137,11 @@ namespace Commands {
     vector<int> stopoverTimes = parseIntVector(command.getParam('o'), '|', stationNum - 2);
     int currentTime = parseTime(command.getParam('x'));
     newTrain.departureTimes[0] = currentTime;
-    for(int i=1; i<stationNum; i++) {
-      currentTime += travelTimes[i-1];
+    for (int i = 1; i < stationNum; i++) {
+      currentTime += travelTimes[i - 1];
       newTrain.arrivalTimes[i] = currentTime;
-      if(i < stationNum - 1) {
-        currentTime += stopoverTimes[i-1];
+      if (i < stationNum - 1) {
+        currentTime += stopoverTimes[i - 1];
         newTrain.departureTimes[i] = currentTime;
       }
     }
@@ -163,7 +163,7 @@ namespace Commands {
     }
     TrainInfo &trainInfo = train.value;
     int trainNum = trainInfo.toTrainNum(parseDate(command.getParam('d')));
-    if(trainNum < 0 || trainNum >= trainInfo.totalCount) {
+    if (trainNum < 0 || trainNum >= trainInfo.totalCount) {
       return "-1";
     }
     std::cout << trainInfo.trainID << ' ' << trainInfo.type << '\n';
@@ -172,7 +172,7 @@ namespace Commands {
                 << trainInfo.getArrival(trainNum, i) << " -> "
                 << trainInfo.getDeparture(trainNum, i) << ' '
                 << trainInfo.prices[i] << ' ';
-      if(i < trainInfo.stationNum - 1) {
+      if (i < trainInfo.stationNum - 1) {
         std::cout << trainInfo.getSeat(trainNum, i) << '\n';
       } else {
         std::cout << "x";
@@ -196,7 +196,7 @@ namespace Commands {
     int startStation = trainInfo.getStationIndex(command.getParam('f'));
     int endStation = trainInfo.getStationIndex(command.getParam('t'));
     int trainNum = trainInfo.searchTrainNum(parseDate(command.getParam('d')), startStation);
-    if(trainNum < 0 || trainNum >= trainInfo.totalCount) {
+    if (trainNum < 0 || trainNum >= trainInfo.totalCount) {
       return "-1";
     }
     int count = command.getIntParam('n');
@@ -216,8 +216,8 @@ namespace Commands {
       price,
       count
     };
-    if(price < 0) {
-      if(shouldQueue) {
+    if (price < 0) {
+      if (shouldQueue) {
         Orders::addOrder(order);
         return "queue";
       }
@@ -229,7 +229,8 @@ namespace Commands {
   }
 
   std::string queryTicket(const Command &command) {
-    Trains::queryTicket(command.getParam('s'), command.getParam('t'), parseDate(command.getParam('d')), command.getParam('p') == "cost");
+    Trains::queryTicket(command.getParam('s'), command.getParam('t'), parseDate(command.getParam('d')),
+                        command.getParam('p') == "cost");
     return "";
   }
 
@@ -240,6 +241,24 @@ namespace Commands {
     }
     Orders::printOrders(user.value.index);
     return "";
+  }
+
+  std::string refundTicket(const Command &command) {
+    auto user = Accounts::getLogged(command.getParam('u'));
+    if (!user.present) {
+      return "-1";
+    }
+    return Orders::refundOrder(user.value.index, command.getParam('n').empty() ? 1 : command.getIntParam('n')) ? "0" : "-1";
+  }
+
+  std::string queryTransfer(const Command &command) {
+    //TODO
+    return "0";
+  }
+
+  std::string clean(const Command &command) {
+    //TODO
+    return "0";
   }
 
   std::string exit(const Command &command) {
@@ -261,6 +280,9 @@ namespace Commands {
     commandMap["buy_ticket"] = buyTicket;
     commandMap["query_order"] = queryOrder;
     commandMap["query_ticket"] = queryTicket;
+    commandMap["refund_ticket"] = refundTicket;
+    commandMap["query_transfer"] = queryTransfer;
+    commandMap["clean"] = clean;
   }
 
   std::string run(const std::string &s) {
