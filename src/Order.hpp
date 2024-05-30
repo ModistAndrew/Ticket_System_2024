@@ -43,15 +43,6 @@ struct Order {
     return out << b.getStatus() << ' ' << b.trainID << ' ' <<
     b.from << ' ' << b.departureTime << " -> " << b.to << ' ' << b.arrivalTime << ' ' << b.price << ' ' << b.num;
   }
-
-  bool setRefund() { //refund, return whether the order is successfully refunded
-    if (status == 0) {
-      status = 2;
-      return true;
-    }
-    status = 2;
-    return false;
-  }
 };
 
 struct OrderQueue {
@@ -100,9 +91,14 @@ namespace Orders {
     }
     itNow.markDirty();
     Order &orderNow = itNow->val;
-    if(!orderNow.setRefund()) {
+    if(orderNow.status == 1) {
+      orderNow.status = 2;
       return true;
     }
+    if(orderNow.status == 2) {
+      return false;
+    }
+    orderNow.status = 2;
     auto train = Trains::getTrain(orderNow.trainID, true, true);
     if (!train.present) {
       throw;
