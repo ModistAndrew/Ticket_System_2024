@@ -8,15 +8,15 @@
 #include "Util.hpp"
 #include "FileStorage.hpp"
 
-template<typename T, int MAX_SIZE = 10000, int CACHE_SIZE = 10000>
+template<typename T, int MAX_SIZE = 10000, int CACHE_SIZE = 100000>
 class PersistentMap { //use T::index as key
   struct TreeNode;
   struct LeafNode;
 
   typedef T::INDEX INDEX;
 
-  static constexpr int SIZE_1 = 3200 / sizeof(T) * 2;
-  static constexpr int SIZE_2 = 3200 / sizeof(INDEX) * 2;
+  static constexpr int SIZE_1 = 1024 / sizeof(T) * 2;
+  static constexpr int SIZE_2 = 1024 / sizeof(INDEX) * 2;
 
   static_assert(SIZE_1 >= 4 && SIZE_1 % 2 == 0, "SIZE_1 must be even and at least 4");
   static_assert(SIZE_2 >= 4 && SIZE_2 % 2 == 0, "SIZE_2 must be even and at least 4");

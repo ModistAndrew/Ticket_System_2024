@@ -8,12 +8,12 @@
 #include "Util.hpp"
 #include "FileStorage.hpp"
 
-template<typename T, int MAX_SIZE = 10000, int CACHE_SIZE = 10000>
+template<typename T, int MAX_SIZE = 10000, int CACHE_SIZE = 100000>
 class PersistentSet { //use T as key
   struct TreeNode;
   struct LeafNode;
 
-  static constexpr int SIZE = 3200 / sizeof(T) * 2;
+  static constexpr int SIZE = 1024 / sizeof(T) * 2;
 
   static_assert(SIZE >= 4 && SIZE % 2 == 0, "SIZE must be even and at least 4");
 
