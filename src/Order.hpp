@@ -44,7 +44,7 @@ struct Order {
     b.from << ' ' << b.departureTime << " -> " << b.to << ' ' << b.arrivalTime << ' ' << b.price << ' ' << b.num;
   }
 
-  bool refund() { //refund, return whether the order is successfully refunded
+  bool setRefund() { //refund, return whether the order is successfully refunded
     if (status == 0) {
       status = 2;
       return true;
@@ -100,7 +100,7 @@ namespace Orders {
     }
     itNow.markDirty();
     Order &orderNow = itNow->val;
-    if(!orderNow.refund()) {
+    if(!orderNow.setRefund()) {
       return true;
     }
     auto train = Trains::getTrain(orderNow.trainID, true, true);
@@ -120,7 +120,6 @@ namespace Orders {
         if (trainInfo.buy(orderPending.trainNum, orderPending.fromId, orderPending.toId, orderPending.num) >= 0) {
           orderPendingRef.first.markDirty();
           orderPending.status = 0;
-          return true;
         }
       }
       ++itQueue;

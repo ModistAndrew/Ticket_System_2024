@@ -195,7 +195,7 @@ namespace Commands {
     TrainInfo &trainInfo = train.value;
     int startStation = trainInfo.getStationIndex(command.getParam('f'));
     int endStation = trainInfo.getStationIndex(command.getParam('t'));
-    if(startStation < 0 || endStation < 0) {
+    if (startStation < 0 || endStation < 0 || startStation >= endStation) {
       return "-1";
     }
     int trainNum = trainInfo.searchTrainNum(parseDate(command.getParam('d')), startStation);
@@ -251,7 +251,8 @@ namespace Commands {
     if (!user.present) {
       return "-1";
     }
-    return Orders::refundOrder(user.value.userID, command.getParam('n').empty() ? 1 : command.getIntParam('n')) ? "0" : "-1";
+    return Orders::refundOrder(user.value.userID, command.getParam('n').empty() ? 1 : command.getIntParam('n')) ? "0"
+                                                                                                                : "-1";
   }
 
   std::string queryTransfer(const Command &command) {
@@ -260,7 +261,7 @@ namespace Commands {
   }
 
   std::string clean(const Command &command) {
-    //TODO
+    throw;
     return "0";
   }
 

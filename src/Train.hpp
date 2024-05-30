@@ -242,14 +242,12 @@ namespace Trains {
           Chrono departure = trainInfo.getDeparture(trainNum, it1->stationNum);
           Chrono arrival = trainInfo.getArrival(trainNum, it2->stationNum);
           int seat = trainInfo.getMaxSeat(trainNum, it1->stationNum, it2->stationNum);
-          if(seat > 0) {
-            queue.push(Line{trainInfo.trainID,
-                            from, departure,
-                            to, arrival,
-                            trainInfo.getPrice(it1->stationNum, it2->stationNum),
-                            seat,
-                            arrival.toTick() - departure.toTick()});
-          }
+          queue.push(Line{trainInfo.trainID,
+                          from, departure,
+                          to, arrival,
+                          trainInfo.getPrice(it1->stationNum, it2->stationNum),
+                          seat,
+                          arrival.toTick() - departure.toTick()});
         }
       }
       if (it1->trainData < it2->trainData) {

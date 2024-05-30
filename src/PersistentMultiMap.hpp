@@ -8,7 +8,7 @@
 #include "Util.hpp"
 #include "FileStorage.hpp"
 
-template<typename T0, int MAX_SIZE = 20000>
+template<typename T0, int MAX_SIZE = 200000>
 class PersistentMultiMap {
   //use T0+int as key and value. new elements are always inserted at end or first
   //if you want other order, use persistent set instead
@@ -391,6 +391,9 @@ public:
   int pushBack(const T0 &val) {
     int ret = total;
     total++;
+    if(total <= 0) {
+      throw;
+    }
     getRoot().insert(this, {val, ret}, &dummy, 0);
     if (dummy.size == 2) {
       TreeNode newRoot;
@@ -404,6 +407,9 @@ public:
   int pushFront(const T0 &val) {
     int ret = -total;
     total++;
+    if(total <= 0) {
+      throw;
+    }
     getRoot().insert(this, {val, ret}, &dummy, 0);
     if (dummy.size == 2) {
       TreeNode newRoot;
