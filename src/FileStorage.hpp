@@ -1,5 +1,5 @@
-#ifndef BPT_FILE_STORAGE_HPP
-#define BPT_FILE_STORAGE_HPP
+#ifndef TICKETSYSTEM2024_FILE_STORAGE_HPP
+#define TICKETSYSTEM2024_FILE_STORAGE_HPP
 
 #include <fstream>
 #include <filesystem>
@@ -129,4 +129,4 @@ public:
   }
 };
 
-#endif //BPT_FILE_STORAGE_HPP
+#endif

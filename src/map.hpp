@@ -1,5 +1,5 @@
-#ifndef TICKET_SYSTEM_2024_Map_HPP
-#define TICKET_SYSTEM_2024_Map_HPP
+#ifndef TICKETSYSTEM2024_MAP_HPP
+#define TICKETSYSTEM2024_MAP_HPP
 
 #include "Util.hpp"
 #include "Exceptions.hpp"
@@ -676,4 +676,4 @@ public:
   }
 };
 
-#endif //TICKET_SYSTEM_2024_Map_HPP
+#endif

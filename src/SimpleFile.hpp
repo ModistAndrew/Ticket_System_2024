@@ -2,8 +2,8 @@
 // Created by zjx on 2024/5/26.
 //
 
-#ifndef TICKETSYSTEM2024_SIMPLEFILE_HPP
-#define TICKETSYSTEM2024_SIMPLEFILE_HPP
+#ifndef TICKETSYSTEM2024_SIMPLE_FILE_HPP
+#define TICKETSYSTEM2024_SIMPLE_FILE_HPP
 
 #include <fstream>
 #include <filesystem>
@@ -65,4 +65,4 @@ public:
 };
 
 
-#endif //TICKETSYSTEM2024_SIMPLEFILE_HPP
+#endif

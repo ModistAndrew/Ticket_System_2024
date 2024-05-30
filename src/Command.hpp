@@ -300,4 +300,4 @@ namespace Commands {
   }
 }
 
-#endif //TICKETSYSTEM2024_COMMAND_HPP
+#endif

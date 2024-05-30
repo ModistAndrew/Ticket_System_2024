@@ -85,4 +85,4 @@ void AccountStorage::modify(const Account &newAccount) {
     Accounts::currentAccounts.insert({newAccount.userID, newAccount});
   }
 }
-#endif //TICKETSYSTEM2024_ACCOUNT_HPP
+#endif

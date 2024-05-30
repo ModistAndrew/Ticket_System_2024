@@ -2,8 +2,8 @@
 // Created by zjx on 2024/4/26.
 //
 
-#ifndef TICKET_SYSTEM_2024_UTIL_HPP
-#define TICKET_SYSTEM_2024_UTIL_HPP
+#ifndef TICKETSYSTEM2024_UTIL_HPP
+#define TICKETSYSTEM2024_UTIL_HPP
 
 #include <iostream>
 #include <cstdio>
@@ -183,4 +183,4 @@ using String20 = FixedString<20>;
 using String30 = FixedString<30>;
 using String40 = FixedString<40>;
 
-#endif //TICKET_SYSTEM_2024_UTIL_HPP
+#endif

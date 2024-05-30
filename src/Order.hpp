@@ -110,6 +110,7 @@ namespace Orders {
     TrainInfo &trainInfo = train.value;
     trainInfo.refund(orderNow.trainNum, orderNow.fromId, orderNow.toId, orderNow.num);
     auto itQueue = orderQueueMap.find({orderNow.trainID, orderNow.trainNum});
+    list<int> toErase;
     while (!itQueue.end() && itQueue->val.train.first == orderNow.trainID && itQueue->val.train.second == orderNow.trainNum) {
       auto orderPendingRef = orderMap.get(itQueue->val.userID, itQueue->val.tick);
       if(!orderPendingRef.second) {
@@ -120,11 +121,17 @@ namespace Orders {
         if (trainInfo.buy(orderPending.trainNum, orderPending.fromId, orderPending.toId, orderPending.num) >= 0) {
           orderPendingRef.first.markDirty();
           orderPending.status = 0;
+          toErase.push_back(itQueue->val.tick);
         }
+      } else {
+        toErase.push_back(itQueue->val.tick);
       }
       ++itQueue;
+    }
+    for (auto i: toErase) {
+      orderQueueMap.erase({orderNow.trainID, orderNow.trainNum}, i);
     }
     return true;
   }
 }
-#endif //TICKETSYSTEM2024_ORDER_HPP
+#endif

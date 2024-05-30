@@ -2,8 +2,8 @@
 // Created by zjx on 2024/5/26.
 //
 
-#ifndef TICKETSYSTEM2024_STRINGPARSER_HPP
-#define TICKETSYSTEM2024_STRINGPARSER_HPP
+#ifndef TICKETSYSTEM2024_STRING_PARSER_HPP
+#define TICKETSYSTEM2024_STRING_PARSER_HPP
 
 #include <string>
 #include "vector.hpp"
@@ -187,4 +187,4 @@ std::string toFixedStringIntVector(int length, const vector<int> &v, int l) {
   return ret;
 }
 
-#endif //TICKETSYSTEM2024_STRINGPARSER_HPP
+#endif

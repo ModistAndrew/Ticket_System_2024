@@ -2,8 +2,8 @@
 // Created by zjx on 2024/4/22.
 //
 
-#ifndef TICKET_SYSTEM_2024_PERSISTENT_MAP_HPP
-#define TICKET_SYSTEM_2024_PERSISTENT_MAP_HPP
+#ifndef TICKETSYSTEM2024_PERSISTENT_MAP_HPP
+#define TICKETSYSTEM2024_PERSISTENT_MAP_HPP
 
 #include "Util.hpp"
 #include "FileStorage.hpp"
@@ -397,4 +397,4 @@ public:
   }
 };
 
-#endif //TICKET_SYSTEM_2024_PERSISTENT_MAP_HPP
+#endif

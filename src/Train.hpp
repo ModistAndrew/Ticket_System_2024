@@ -12,6 +12,7 @@
 #include "PersistentSet.hpp"
 #include "Util.hpp"
 #include "priority_queue.hpp"
+#include "list.hpp"
 
 struct Train {
   String20 trainID; //train ID
@@ -264,4 +265,4 @@ namespace Trains {
   }
 }
 
-#endif //TICKETSYSTEM2024_TRAIN_HPP
+#endif
