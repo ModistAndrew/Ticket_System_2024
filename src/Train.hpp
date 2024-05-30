@@ -17,7 +17,7 @@ struct Train {
   String20 trainID; //train ID
   int trainData; //where train data is stored
   using INDEX = String20;
-  const INDEX& index() const {
+  INDEX index() const {
     return trainID;
   }
 };

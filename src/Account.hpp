@@ -16,7 +16,7 @@ struct Account {
   int privilege;
   using INDEX = String20;
 
-  const INDEX& index() const {
+  INDEX index() const {
     return userID;
   }
 
