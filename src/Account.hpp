@@ -9,19 +9,24 @@
 #include "PersistentMap.hpp"
 
 struct Account {
-  String20 index;
+  String20 userID;
   String30 password;
   String20 name;
   String30 mailAddr;
   int privilege;
+  using INDEX = String20;
+
+  const INDEX& index() const {
+    return userID;
+  }
 
   Account(const std::string &index, const std::string &password, const std::string &name, const std::string &mailAddr, int privilege) :
-    index(index), password(password), name(name), mailAddr(mailAddr), privilege(privilege) {}
+    userID(index), password(password), name(name), mailAddr(mailAddr), privilege(privilege) {}
 
   Account() = default;
 
   friend std::ostream &operator<<(std::ostream &out, const Account &b) {
-    return out << b.index << ' ' << b.name << ' ' << b.mailAddr << ' ' << b.privilege;
+    return out << b.userID << ' ' << b.name << ' ' << b.mailAddr << ' ' << b.privilege;
   }
 };
 
@@ -37,7 +42,7 @@ namespace AccountStorage {
   }
 
   Optional<Account> get(const String20 &index) {
-    auto ret = accountMap.find(index);
+    auto ret = accountMap.get(index);
     return ret.second ? Optional<Account>(*ret.first) : Optional<Account>();
   }
 
@@ -71,13 +76,13 @@ namespace Accounts {
 }
 
 void AccountStorage::modify(const Account &newAccount) {
-  if(accountMap.erase(newAccount.index)) {
+  if(accountMap.erase(newAccount.userID)) {
     accountMap.insert(newAccount);
   } else {
     throw;
   }
-  if(Accounts::logout(newAccount.index)) {
-    Accounts::currentAccounts.insert({newAccount.index, newAccount});
+  if(Accounts::logout(newAccount.userID)) {
+    Accounts::currentAccounts.insert({newAccount.userID, newAccount});
   }
 }
 #endif //TICKETSYSTEM2024_ACCOUNT_HPP

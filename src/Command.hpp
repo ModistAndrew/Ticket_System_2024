@@ -80,7 +80,7 @@ namespace Commands {
     auto currentAccount = Accounts::getLogged(command.getParam('c'));
     auto queryAccount = AccountStorage::get(command.getParam('u'));
     if (!currentAccount.present || !queryAccount.present ||
-        (currentAccount.value.index != queryAccount.value.index &&
+        (currentAccount.value.userID != queryAccount.value.userID &&
          currentAccount.value.privilege <= queryAccount.value.privilege)) {
       return "-1";
     }
@@ -92,7 +92,7 @@ namespace Commands {
     auto currentAccount = Accounts::getLogged(command.getParam('c'));
     auto modifyAccount = AccountStorage::get(command.getParam('u'));
     if (!currentAccount.present || !modifyAccount.present ||
-        (currentAccount.value.index != modifyAccount.value.index &&
+        (currentAccount.value.userID != modifyAccount.value.userID &&
          currentAccount.value.privilege <= modifyAccount.value.privilege)) {
       return "-1";
     }
@@ -207,8 +207,7 @@ namespace Commands {
     int price = trainInfo.buy(trainNum, startStation, endStation, count);
     Order order = {
       userID,
-      trainID,
-      trainNum,
+      {trainID, trainNum},
       price < 0 ? 1 : 0,
       startStation,
       command.getParam('f'),
@@ -242,7 +241,7 @@ namespace Commands {
     if (!user.present) {
       return "-1";
     }
-    Orders::printOrders(user.value.index);
+    Orders::printOrders(user.value.userID);
     return "";
   }
 
@@ -251,7 +250,7 @@ namespace Commands {
     if (!user.present) {
       return "-1";
     }
-    return Orders::refundOrder(user.value.index, command.getParam('n').empty() ? 1 : command.getIntParam('n')) ? "0" : "-1";
+    return Orders::refundOrder(user.value.userID, command.getParam('n').empty() ? 1 : command.getIntParam('n')) ? "0" : "-1";
   }
 
   std::string queryTransfer(const Command &command) {

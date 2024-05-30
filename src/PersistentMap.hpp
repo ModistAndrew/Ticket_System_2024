@@ -13,7 +13,7 @@ class PersistentMap { //use T::index as key
   struct TreeNode;
   struct LeafNode;
 
-  typedef decltype(T::index) INDEX;
+  typedef T::INDEX INDEX;
 
   static constexpr int SIZE_1 = 3200 / sizeof(T) * 2;
   static constexpr int SIZE_2 = 3200 / sizeof(INDEX) * 2;
@@ -128,7 +128,7 @@ class PersistentMap { //use T::index as key
     }
 
     bool insert(PersistentMap *set, const T &val, TreeNode *parent, int pos) { //insert val into this node
-      int p = upper_bound(index, index + size - 1, val.index) - index;
+      int p = upper_bound(index, index + size - 1, val.index()) - index;
       NodePtr child = set->getPtr(children[p], true);
       if (child.insert(set, val, this, p)) {
         if (size == SIZE_1) {
@@ -234,8 +234,8 @@ class PersistentMap { //use T::index as key
     }
 
     bool insert(PersistentMap *set, const T &val, TreeNode *parent, int pos) { //insert val into this node
-      int p = lower_index_bound(data, data + size, val.index) - data;
-      if (p < size && data[p].index == val.index) {
+      int p = lower_index_bound(data, data + size, val.index()) - data;
+      if (p < size && data[p].index() == val.index()) {
         return false;
       }
       memmove(data + p + 1, data + p, (size - p) * sizeof(T));
@@ -249,7 +249,7 @@ class PersistentMap { //use T::index as key
 
     bool erase(PersistentMap *set, const INDEX &val, TreeNode *parent, int pos) { //erase val from this node
       int p = lower_index_bound(data, data + size, val) - data;
-      if (p >= size || data[p].index != val) {
+      if (p >= size || data[p].index() != val) {
         return false;
       }
       memmove(data + p, data + p + 1, (size - p - 1) * sizeof(T));
@@ -268,7 +268,7 @@ class PersistentMap { //use T::index as key
       memcpy(newNode.data, data + half, half * sizeof(T));
       newNode.next = next;
       next = set->add(newNode);
-      parent->insertChild(next, data[half].index, pos);
+      parent->insertChild(next, data[half].index(), pos);
     }
 
     void postErase(PersistentMap *set, TreeNode *parent, int pos) { //when size==SIZE/2-1
@@ -391,9 +391,9 @@ public:
     return ret;
   }
 
-  pair<iterator, bool> find(const INDEX &val) { //return the iterator first no less than val and whether it equals val
+  pair<iterator, bool> get(const INDEX &val) { //return the iterator first no less than val and whether it equals val
     iterator it = getRoot().find(this, val);
-    return {it, !it.end() && it->index == val};
+    return {it, !it.end() && it->index() == val};
   }
 };
 

@@ -340,16 +340,10 @@ class PersistentSet { //use T as key
   }
 
 public:
-  int length;
   explicit PersistentSet(std::string file_name) : treeNodeStorage(-1, file_name + "_tree"),
                                                   leafNodeStorage(0, file_name + "_leaf") {
     dummy.size = 1;
     dummy.children[0] = treeNodeStorage.info == -1 ? add(LeafNode()) : treeNodeStorage.info;
-    length = leafNodeStorage.info;
-  }
-
-  bool empty() {
-    return length == 0;
   }
 
   ~PersistentSet() {
@@ -364,9 +358,6 @@ public:
       newRoot.children[0] = add(dummy);
       dummy = newRoot;
     }
-    if(ret) {
-      length++;
-    }
     return ret;
   }
 
@@ -379,9 +370,6 @@ public:
         remove(dummy.children[0]);
         dummy = rootNode;
       }
-    }
-    if(ret) {
-      length--;
     }
     return ret;
   }

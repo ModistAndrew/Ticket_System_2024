@@ -42,7 +42,7 @@ template<typename T, typename INDEX>
 T *lower_index_bound(T *first, T *last, const INDEX &val) {
   while (first < last) {
     T *mid = first + (last - first) / 2;
-    if (mid->index < val) {
+    if (mid->index() < val) {
       first = mid + 1;
     } else {
       last = mid;
@@ -55,7 +55,7 @@ template<typename T, typename INDEX>
 T *upper_index_bound(T *first, T *last, const INDEX &val) {
   while (first < last) {
     T *mid = first + (last - first) / 2;
-    if (val >= mid->index) {
+    if (val >= mid->index()) {
       first = mid + 1;
     } else {
       last = mid;
@@ -147,9 +147,9 @@ public:
     }
     strncpy(key, s.c_str(), L);
   }
-
+  
   FixedString() = default;
-
+  
   auto operator<=>(const FixedString &rhs) const = default;
 
   int len() const {
