@@ -8,7 +8,7 @@
 #include "Util.hpp"
 #include "FileStorage.hpp"
 
-template<typename T, int MAX_SIZE = 200000>
+template<typename T, int MAX_SIZE = 50000>
 class PersistentSet { //use T as key
   struct TreeNode;
   struct LeafNode;
