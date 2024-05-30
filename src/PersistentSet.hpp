@@ -386,10 +386,10 @@ public:
     return ret;
   }
 
-  pair<iterator, bool> find(const T &val) { //return the iterator first no less than val and whether it equals val
-    iterator it = getRoot().find(this, val);
-    return {it, !it.end() && it->index == val};
+  iterator find(const T &val) { //return the iterator first no less than val
+    return getRoot().find(this, val);
   }
+
 };
 
 #endif //TICKETSYSTEM2024_PERSISTENT_SET_HPP

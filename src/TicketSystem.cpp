@@ -3,7 +3,9 @@
 #include "PersistentMultiMap.hpp"
 
 int main() {
-  freopen("input.txt", "r", stdin);
+//  freopen("testcases/basic_2/2.in", "r", stdin);
+//  freopen("test.out", "w", stdout);
+//  freopen("test.in", "r", stdin);
   Commands::init();
   while (Commands::running) {
     std::string input;

@@ -81,6 +81,10 @@ struct Chrono {
     return out;
   }
 
+  int toTick() const {
+    return date * 1440 + time;
+  }
+
 };
 
 template<class T1, class T2>
@@ -129,6 +133,8 @@ struct Optional {
   Optional() : present(false) {}
 
   Optional(const T &value) : value(value), present(true) {}
+
+  Optional(T&& value) : value(value), present(true) {}
 };
 
 template<int L>

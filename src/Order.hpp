@@ -68,13 +68,10 @@ namespace Orders {
       count++;
       ++it1;
     }
-    std::cout << count << '\n';
+    std::cout << count;
     for (int i = 0; i < count; i++) {
-      std::cout << *it2;
-      if (i != count - 1) {
-        std::cout << '\n';
-        ++it2;
-      }
+      std::cout << '\n' << *it2;
+      ++it2;
     }
   }
 }

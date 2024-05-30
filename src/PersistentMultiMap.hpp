@@ -203,8 +203,8 @@ class PersistentMultiMap { //use INDEX as key and T as value. Data can only be i
       memcpy(newNode.data, data + half, half * sizeof(T));
       newNode.next = next;
       next = set->add(newNode);
-      parent->insertChild(next, data[half - 1].index,
-                          pos); //notice that we have (a, b] rather than [a, b) here in order to get the first element of the linked list with lower_bound
+      //notice that we have (a, b] rather than [a, b) here in order to get the first element of the linked list with lower_bound
+      parent->insertChild(next, data[half - 1].index, pos);
     }
   };
 

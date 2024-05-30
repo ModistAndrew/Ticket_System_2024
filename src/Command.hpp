@@ -228,6 +228,11 @@ namespace Commands {
     return "";
   }
 
+  std::string queryTicket(const Command &command) {
+    Trains::queryTicket(command.getParam('s'), command.getParam('t'), parseDate(command.getParam('d')), command.getParam('p') == "cost");
+    return "";
+  }
+
   std::string queryOrder(const Command &command) {
     auto user = Accounts::getLogged(command.getParam('u'));
     if (!user.present) {
@@ -255,6 +260,7 @@ namespace Commands {
     commandMap["query_train"] = queryTrain;
     commandMap["buy_ticket"] = buyTicket;
     commandMap["query_order"] = queryOrder;
+    commandMap["query_ticket"] = queryTicket;
   }
 
   std::string run(const std::string &s) {
