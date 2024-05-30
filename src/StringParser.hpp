@@ -21,10 +21,7 @@ int parseInt(const std::string &s) {
   return neg ? -x : x;
 }
 
-std::string toStringInt(int x, int minLength = 0) {
-  if (x == 0) {
-    return "0";
-  }
+std::string toStringInt(int x, int minLength = 1) {
   std::string ret;
   if (x < 0) {
     ret.push_back('-');

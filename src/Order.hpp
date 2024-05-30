@@ -26,11 +26,11 @@ struct Order {
 
   std::string getStatus() const {
     if (status == 0) {
-      return "success";
+      return "[success]";
     } else if (status == 1) {
-      return "pending";
+      return "[pending]";
     } else {
-      return "refunded";
+      return "[refunded]";
     }
   }
 
@@ -39,28 +39,24 @@ struct Order {
                b.from << ' ' << b.departureTime << " -> " << b.to << ' ' << b.arrivalTime << ' ' << b.price << ' '
                << b.num;
   }
-};
 
-struct OrderQueue {
-  String20 trainID;
-  int trainNum;
-  int leafPos;
-  int pos;
-
-  auto operator<=>(const OrderQueue &rhs) const {
-    if (auto cmp = trainID <=> rhs.trainID; cmp != 0) {
-      return cmp;
+  bool refund() { //refund, return whether the order is successfully refunded
+    if (status == 0) {
+      status = 2;
+      return true;
     }
-    if (auto cmp = trainNum <=> rhs.trainNum; cmp != 0) {
-      return cmp;
-    }
-    if (auto cmp = rhs.leafPos <=> leafPos; cmp != 0) {
-      return cmp;
-    }
-    return rhs.pos <=> pos;
+    status = 2;
+    return false;
   }
 
-  bool operator==(const OrderQueue &rhs) const = default;
+  auto operator<=>(const Order &rhs) const {
+    if(auto cmp = trainID <=> rhs.trainID; cmp != 0) {
+      return cmp;
+    }
+    if(auto cmp = trainNum <=> rhs.trainNum; cmp != 0) {
+      return cmp;
+    }
+  }
 };
 
 namespace Orders {
@@ -99,8 +95,7 @@ namespace Orders {
       return false;
     }
     itNow.markDirty();
-    itNow->status = 2;
-    if (itNow->status > 0) {
+    if(!itNow->refund()) {
       return true;
     }
     auto train = Trains::getTrain(itNow->trainID, true, true);

@@ -95,7 +95,7 @@ struct TrainInfo {
         return i;
       }
     }
-    throw;
+    return -1;
   }
 
   Chrono getArrival(int trainNum, int stationIndex) {

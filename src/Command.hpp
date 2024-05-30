@@ -195,6 +195,9 @@ namespace Commands {
     TrainInfo &trainInfo = train.value;
     int startStation = trainInfo.getStationIndex(command.getParam('f'));
     int endStation = trainInfo.getStationIndex(command.getParam('t'));
+    if(startStation < 0 || endStation < 0) {
+      return "-1";
+    }
     int trainNum = trainInfo.searchTrainNum(parseDate(command.getParam('d')), startStation);
     if (trainNum < 0 || trainNum >= trainInfo.totalCount) {
       return "-1";
@@ -213,7 +216,7 @@ namespace Commands {
       endStation,
       command.getParam('t'),
       trainInfo.getArrival(trainNum, endStation),
-      price,
+      trainInfo.getPrice(startStation, endStation),
       count
     };
     if (price < 0) {
