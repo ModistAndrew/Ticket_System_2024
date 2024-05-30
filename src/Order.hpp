@@ -26,7 +26,7 @@ struct Order {
   using INDEX = String20;
 
   const INDEX& index() const {
-    return trainID;
+    return userID;
   }
 
   std::string getStatus() const {

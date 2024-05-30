@@ -14,8 +14,12 @@
 #include "priority_queue.hpp"
 
 struct Train {
-  String20 index; //train ID
+  String20 trainID; //train ID
   int trainData; //where train data is stored
+  using INDEX = String20;
+  const INDEX& index() const {
+    return trainID;
+  }
 };
 
 struct TrainInfo {

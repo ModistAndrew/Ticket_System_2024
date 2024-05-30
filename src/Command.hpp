@@ -207,7 +207,8 @@ namespace Commands {
     int price = trainInfo.buy(trainNum, startStation, endStation, count);
     Order order = {
       userID,
-      {trainID, trainNum},
+      trainID,
+      trainNum,
       price < 0 ? 1 : 0,
       startStation,
       command.getParam('f'),

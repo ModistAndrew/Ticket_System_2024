@@ -24,12 +24,6 @@ class PersistentMultiMap {
   struct T {
     T0 val;
     int tick;
-    auto operator<=>(const T &rhs) const {
-      if(auto cmp = val <=> rhs.val; cmp != 0) {
-        return cmp;
-      }
-      return rhs.tick <=> tick;
-    }
 
     INDEX index() const {
       return {val.index(), tick};
@@ -434,7 +428,7 @@ public:
   }
 
   iterator find(const T0::INDEX &val) { //find the first element no less than val
-    return getRoot().find(this, {val, INT32_MAX}, dummy.children[0]);
+    return getRoot().find(this, {val, INT32_MIN}, dummy.children[0]);
   }
   
   pair<iterator, bool> get(const T0::INDEX &val, int tick) {
