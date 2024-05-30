@@ -193,12 +193,12 @@ namespace Commands {
       return "-1";
     }
     TrainInfo &trainInfo = train.value;
-    int startStation = trainInfo.getStationIndex(command.getParam('f'));
-    int endStation = trainInfo.getStationIndex(command.getParam('t'));
+    int startStation = trainInfo.searchStationIndex(command.getParam('f'));
+    int endStation = trainInfo.searchStationIndex(command.getParam('t'));
     if (startStation < 0 || endStation < 0 || startStation >= endStation) {
       return "-1";
     }
-    int trainNum = trainInfo.searchTrainNum(parseDate(command.getParam('d')), startStation);
+    int trainNum = trainInfo.findTrainNum(parseDate(command.getParam('d')), startStation);
     if (trainNum < 0 || trainNum >= trainInfo.totalCount) {
       return "-1";
     }
@@ -251,13 +251,12 @@ namespace Commands {
     if (!user.present) {
       return "-1";
     }
-    return Orders::refundOrder(user.value.userID, command.getParam('n').empty() ? 1 : command.getIntParam('n')) ? "0"
-                                                                                                                : "-1";
+    return Orders::refundOrder(user.value.userID, command.getParam('n').empty() ? 1 : command.getIntParam('n')) ? "0" : "-1";
   }
 
   std::string queryTransfer(const Command &command) {
-    //TODO
-    return "0";
+    return Trains::queryTransfer(command.getParam('s'), command.getParam('t'), parseDate(command.getParam('d')),
+                                 command.getParam('p') == "cost") ? "" : "0";
   }
 
   std::string clean(const Command &command) {

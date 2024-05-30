@@ -18,6 +18,7 @@ struct Train {
   String20 trainID; //train ID
   int trainData; //where train data is stored
   using INDEX = String20;
+
   INDEX index() const {
     return trainID;
   }
@@ -85,16 +86,33 @@ struct TrainInfo {
     *base = toString();
   }
 
-  int toTrainNum(int startDate) {
+  int toTrainNum(int startDate) const {
     return startDate - firstStartDate;
   }
 
-  int searchTrainNum(int departureDate,
-                     int stationIndex) { //search the train num when the train depart from station[stationIndex] on departureDate
+  //search the train num when the train depart from station[stationIndex] on departureDate
+  //may < 0 or >= totalCount. you should check it
+  int findTrainNum(int departureDate, int stationIndex) const {
     return departureDate - getDeparture(0, stationIndex).date;
   }
 
-  int getStationIndex(const std::string &stationName) {
+  //search the min train num when the train depart from station[stationIndex] after minDeparture
+  //return -1 if no such train
+  int findBestTrainNum(Chrono minDeparture, int stationIndex) const {
+    int ret = findTrainNum(minDeparture.date, stationIndex);
+    if (getDeparture(ret, stationIndex).toTick() < minDeparture.toTick()) {
+      ret++;
+    }
+    if (ret < 0) {
+      return 0;
+    }
+    if (ret >= totalCount) {
+      return -1;
+    }
+    return ret;
+  }
+
+  int searchStationIndex(const std::string &stationName) const {
     for (int i = 0; i < stationNum; i++) {
       if (stationNames[i] == stationName) {
         return i;
@@ -103,19 +121,19 @@ struct TrainInfo {
     return -1;
   }
 
-  Chrono getArrival(int trainNum, int stationIndex) {
+  Chrono getArrival(int trainNum, int stationIndex) const {
     return stationIndex == 0 ? Chrono() : Chrono(firstStartDate + trainNum, arrivalTimes[stationIndex]);
   }
 
-  Chrono getDeparture(int trainNum, int stationIndex) {
+  Chrono getDeparture(int trainNum, int stationIndex) const {
     return stationIndex == stationNum - 1 ? Chrono() : Chrono(firstStartDate + trainNum, departureTimes[stationIndex]);
   }
 
-  int getSeat(int trainNum, int stationIndex) { //stationIndex should be less than stationNum - 1
+  int getSeat(int trainNum, int stationIndex) const { //stationIndex should be less than stationNum - 1
     return seats[trainNum * (stationNum - 1) + stationIndex];
   }
 
-  int getMaxSeat(int trainNum, int startStationIndex, int endStationIndex) {
+  int getMaxSeat(int trainNum, int startStationIndex, int endStationIndex) const {
     int res = seats[trainNum * (stationNum - 1) + startStationIndex];
     for (int i = startStationIndex + 1; i < endStationIndex; i++) {
       res = std::min(res, seats[trainNum * (stationNum - 1) + i]);
@@ -123,7 +141,7 @@ struct TrainInfo {
     return res;
   }
 
-  int getPrice(int startStationIndex, int endStationIndex) {
+  int getPrice(int startStationIndex, int endStationIndex) const {
     return prices[endStationIndex] - prices[startStationIndex];
   }
 
@@ -149,7 +167,7 @@ struct TrainInfo {
 };
 
 struct Station {
-  String40 index; //station name
+  String40 station; //station name
   int trainData; //where train data is stored
   int stationNum; //index of the station in the train
   auto operator<=>(const Station &rhs) const = default;
@@ -173,8 +191,31 @@ struct Line {
     return lhs.price > rhs.price || (lhs.price == rhs.price && lhs.trainID > rhs.trainID);
   }
 
+  static bool cmpTimePair(const pair<Line, Line> &lhs, const pair<Line, Line> &rhs) {
+    int totalTime1 = lhs.second.arrival.toTick() - lhs.first.departure.toTick();
+    int totalTime2 = rhs.second.arrival.toTick() - rhs.first.departure.toTick();
+    int totalPrice1 = lhs.first.price + lhs.second.price;
+    int totalPrice2 = rhs.first.price + rhs.second.price;
+    return totalTime1 > totalTime2 || (totalTime1 == totalTime2 && totalPrice1 > totalPrice2) ||
+           (totalTime1 == totalTime2 && totalPrice1 == totalPrice2 && lhs.first.trainID > rhs.first.trainID) ||
+           (totalTime1 == totalTime2 && totalPrice1 == totalPrice2 && lhs.first.trainID == rhs.first.trainID &&
+            lhs.second.trainID > rhs.second.trainID);
+  }
+
+  static bool cmpPricePair(const pair<Line, Line> &lhs, const pair<Line, Line> &rhs) {
+    int totalPrice1 = lhs.first.price + lhs.second.price;
+    int totalPrice2 = rhs.first.price + rhs.second.price;
+    int totalTime1 = lhs.second.arrival.toTick() - lhs.first.departure.toTick();
+    int totalTime2 = rhs.second.arrival.toTick() - rhs.first.departure.toTick();
+    return totalPrice1 > totalPrice2 || (totalPrice1 == totalPrice2 && totalTime1 > totalTime2) ||
+           (totalPrice1 == totalPrice2 && totalTime1 == totalTime2 && lhs.first.trainID > rhs.first.trainID) ||
+           (totalPrice1 == totalPrice2 && totalTime1 == totalTime2 && lhs.first.trainID == rhs.first.trainID &&
+            lhs.second.trainID > rhs.second.trainID);
+  }
+
   friend std::ostream &operator<<(std::ostream &out, const Line &rhs) {
-    out << rhs.trainID << ' ' << rhs.from << ' ' << rhs.departure << " -> " << rhs.to << ' ' << rhs.arrival << ' ' << rhs.price << ' ' << rhs.seat;
+    out << rhs.trainID << ' ' << rhs.from << ' ' << rhs.departure << " -> " << rhs.to << ' ' << rhs.arrival << ' '
+        << rhs.price << ' ' << rhs.seat;
     return out;
   }
 };
@@ -235,10 +276,10 @@ namespace Trains {
     auto it1 = stationMap.find({from, 0, 0});
     auto it2 = stationMap.find({to, 0, 0});
     priority_queue<Line> queue(isPrice ? Line::cmpPrice : Line::cmpTime);
-    while (!it1.end() && it1->index == from && !it2.end() && it2->index == to) {
+    while (!it1.end() && it1->station == from && !it2.end() && it2->station == to) {
       if (it1->trainData == it2->trainData && it1->stationNum < it2->stationNum) {
         TrainInfo trainInfo = TrainInfo(trainDataFile.get(it1->trainData, false));
-        int trainNum = trainInfo.searchTrainNum(date, it1->stationNum);
+        int trainNum = trainInfo.findTrainNum(date, it1->stationNum);
         if (trainNum >= 0 && trainNum < trainInfo.totalCount) {
           Chrono departure = trainInfo.getDeparture(trainNum, it1->stationNum);
           Chrono arrival = trainInfo.getArrival(trainNum, it2->stationNum);
@@ -258,10 +299,77 @@ namespace Trains {
       }
     }
     std::cout << queue.size();
-    while(!queue.empty()) {
+    while (!queue.empty()) {
       std::cout << '\n' << queue.top();
       queue.pop();
     }
+  }
+
+  bool queryTransfer(const String40 &from, const String40 &to, int date, bool isPrice) {
+    auto it1 = stationMap.find({from, 0, 0});
+    auto it2 = stationMap.find({to, 0, 0});
+    list<TrainInfo> trainsFrom;
+    list<TrainInfo> trainsTo;
+    while (!it1.end() && it1->station == from) {
+      trainsFrom.push_back(TrainInfo(trainDataFile.get(it1->trainData, false)));
+      it1++;
+    }
+    while (!it2.end() && it2->station == to) {
+      trainsTo.push_back(TrainInfo(trainDataFile.get(it2->trainData, false)));
+      it2++;
+    }
+    priority_queue<pair<Line, Line>> queue(isPrice ? Line::cmpPricePair : Line::cmpTimePair);
+    for (const auto &trainFrom: trainsFrom) {
+      for (const auto &trainTo: trainsTo) {
+        map<String40, int> stationIndicesFrom, stationIndicesTo;
+        for (int i = 0; i < trainFrom.stationNum; i++) {
+          stationIndicesFrom[trainFrom.stationNames[i]] = i;
+        }
+        for (int i = 0; i < trainTo.stationNum; i++) {
+          stationIndicesTo[trainTo.stationNames[i]] = i;
+        }
+        int indexFrom = stationIndicesFrom[from];
+        int indexTo = stationIndicesTo[to];
+        for (int intersectionIndexFrom = indexFrom + 1; intersectionIndexFrom < trainFrom.stationNum; intersectionIndexFrom++) {
+          String40 intersection = trainFrom.stationNames[intersectionIndexFrom];
+          auto it = stationIndicesTo.find(intersection);
+          if (it != stationIndicesTo.end()) {
+            int intersectionIndexTo = it->second;
+            if (intersectionIndexTo < indexTo) {
+              int trainNumFrom = trainFrom.findTrainNum(date, indexFrom);
+              if (trainNumFrom < 0 || trainNumFrom >= trainFrom.totalCount) {
+                continue;
+              }
+              Chrono departureFrom = trainFrom.getDeparture(trainNumFrom, indexFrom);
+              Chrono arrivalFrom = trainFrom.getArrival(trainNumFrom, intersectionIndexFrom);
+              int trainNumTo = trainTo.findBestTrainNum(arrivalFrom, intersectionIndexTo);
+              if (trainNumTo < 0) {
+                continue;
+              }
+              Chrono departureTo = trainTo.getDeparture(trainNumTo, intersectionIndexTo);
+              Chrono arrivalTo = trainTo.getArrival(trainNumTo, indexTo);
+              queue.push({Line{trainFrom.trainID,
+                               from, departureFrom,
+                               intersection, arrivalFrom,
+                               trainFrom.getPrice(indexFrom, intersectionIndexFrom),
+                               trainFrom.getMaxSeat(trainNumFrom, indexFrom, intersectionIndexFrom),
+                               arrivalFrom.toTick() - departureFrom.toTick()},
+                          Line{trainTo.trainID,
+                               intersection, departureTo,
+                               to, arrivalTo,
+                               trainTo.getPrice(intersectionIndexTo, indexTo),
+                               trainTo.getMaxSeat(trainNumTo, intersectionIndexTo, indexTo),
+                               arrivalTo.toTick() - departureTo.toTick()}});
+            }
+          }
+        }
+      }
+    }
+    if (queue.empty()) {
+      return false;
+    }
+    std::cout << queue.top().first << '\n' << queue.top().second;
+    return true;
   }
 }
 
