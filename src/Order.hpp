@@ -121,9 +121,9 @@ namespace Orders {
         if (trainInfo.buy(orderPending.trainNum, orderPending.fromId, orderPending.toId, orderPending.num) >= 0) {
           orderPendingRef.first.markDirty();
           orderPending.status = 0;
-          toErase.push_back(itQueue->val.tick);
         }
-      } else {
+      }
+      if (orderPending.status != 1) {
         toErase.push_back(itQueue->val.tick);
       }
       ++itQueue;
