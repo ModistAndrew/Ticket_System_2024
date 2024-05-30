@@ -203,6 +203,9 @@ namespace Commands {
       return "-1";
     }
     int count = command.getIntParam('n');
+    if(count > trainInfo.seatNum) {
+      return "-1";
+    }
     bool shouldQueue = command.getParam('q') == "true";
     int price = trainInfo.buy(trainNum, startStation, endStation, count);
     Order order = {
@@ -294,11 +297,6 @@ namespace Commands {
     if (it == commandMap.end()) {
       throw;
     }
-
-    if(command.timestamp == "[750566]") {
-      std::cerr << "haha" << std::endl;
-    }
-
     std::cout << command.timestamp << ' ';
     return it->second(command);
   }
