@@ -155,6 +155,7 @@ namespace Commands {
   }
 
   std::string queryTrain(const Command &command) {
+    bool isReleased;
     auto train = Trains::getTrain(command.getParam('i'), false, false);
     if (!train.present) {
       return "-1";

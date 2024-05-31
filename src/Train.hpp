@@ -22,6 +22,35 @@ struct Train {
   }
 };
 
+struct Seats {
+  vector<int> seats;
+  Seats() = default;
+  Seats(int length, int initSeat) : seats(length) {
+    for (int i = 0; i < length; i++) {
+      seats[i] = initSeat;
+    }
+  }
+  explicit Seats(const std::string& s) : seats(parseFixedIntVector(6, s, s.length() / 6)) {}
+  std::string toString() const {
+    return toFixedStringIntVector(6, seats, seats.size());
+  }
+
+  int& operator[](int i) {
+    return seats[i];
+  }
+};
+
+struct Station {
+  String40 station; //station name
+  int trainData; //where train data is stored
+  int stationNum; //index of the station in the train
+  auto operator<=>(const Station &rhs) const = default;
+};
+
+namespace Trains {
+  extern SimpleFile<Seats, 5000000> seatDataFile;
+}
+
 struct TrainInfo {
   std::string trainID;
   int stationNum;
@@ -33,7 +62,7 @@ struct TrainInfo {
   int firstStartDate;
   int totalCount; //total number of trains. from startDate to startDate + totalDate - 1
   std::string type; //type of the train
-  vector<int> seats; //seats[i * (stationNum - 1) + j] is the number of seats of station[j] on the ith train. size == train_num * (stationNum - 1)
+  vector<int> seatLoc; //seats[i] points to the start of the seat info of train i. size == totalCount
 
   TrainInfo() = default;
 
@@ -41,9 +70,9 @@ struct TrainInfo {
     trainID(std::move(trainID)), stationNum(stationNum), seatNum(seatNum), firstStartDate(firstStartDate),
     totalCount(totalCount), type(std::move(type)),
     stationNames(stationNum), prices(stationNum), arrivalTimes(stationNum), departureTimes(stationNum),
-    seats(totalCount * (stationNum - 1)) {
-    for (int i = 0; i < totalCount * (stationNum - 1); i++) {
-      seats[i] = seatNum;
+    seatLoc(totalCount) {
+    for (int i = 0; i < totalCount; i++) {
+      seatLoc[i] = Trains::seatDataFile.write(Seats(stationNum, seatNum));
     }
   }
 
@@ -59,7 +88,7 @@ struct TrainInfo {
     firstStartDate = parseInt(v[7]);
     totalCount = parseInt(v[8]);
     type = v[9];
-    seats = parseFixedIntVector(6, v[10], totalCount * (stationNum - 1));
+    seatLoc = parseIntVector(v[10], '|', totalCount);
   }
 
   std::string toString() const {
@@ -74,7 +103,7 @@ struct TrainInfo {
     v[7] = toStringInt(firstStartDate);
     v[8] = toStringInt(totalCount);
     v[9] = type;
-    v[10] = toFixedStringIntVector(6, seats, totalCount * (stationNum - 1));
+    v[10] = toStringIntVector(seatLoc, '|', totalCount);
     return toStringVector(v, ' ', 11);
   }
 
@@ -121,16 +150,21 @@ struct TrainInfo {
     return stationIndex == stationNum - 1 ? Chrono() : Chrono(firstStartDate + trainNum, departureTimes[stationIndex]);
   }
 
-  int getSeat(int trainNum, int stationIndex) const { //stationIndex should be less than stationNum - 1
-    return seats[trainNum * (stationNum - 1) + stationIndex];
+  Seats* getSeats(int trainNum, bool dirty) const {
+    return Trains::seatDataFile.get(seatLoc[trainNum], dirty);
+  }
+
+  int getSeat(int trainNum, int stationIndex) const {
+    return getSeats(trainNum, false)->operator[](stationIndex);
   }
 
   int getMaxSeat(int trainNum, int startStationIndex, int endStationIndex) const {
-    int res = seats[trainNum * (stationNum - 1) + startStationIndex];
+    Seats& seats = *getSeats(trainNum, false);
+    int ret = seats[startStationIndex];
     for (int i = startStationIndex + 1; i < endStationIndex; i++) {
-      res = std::min(res, seats[trainNum * (stationNum - 1) + i]);
+      ret = std::min(ret, seats[i]);
     }
-    return res;
+    return ret;
   }
 
   int getPrice(int startStationIndex, int endStationIndex) const {
@@ -138,29 +172,25 @@ struct TrainInfo {
   }
 
   int buy(int trainNum, int startStationIndex, int endStationIndex, int num) {
+    Seats& seats = *getSeats(trainNum, false);
     for (int i = startStationIndex; i < endStationIndex; i++) {
-      if (seats[trainNum * (stationNum - 1) + i] < num) {
+      if (seats[i] < num) {
         return -1;
       }
     }
+    getSeats(trainNum, true);
     for (int i = startStationIndex; i < endStationIndex; i++) {
-      seats[trainNum * (stationNum - 1) + i] -= num;
+      seats[i] -= num;
     }
     return num * getPrice(startStationIndex, endStationIndex);
   }
 
   void refund(int trainNum, int startStationIndex, int endStationIndex, int num) {
+    Seats& seats = *getSeats(trainNum, true);
     for (int i = startStationIndex; i < endStationIndex; i++) {
-      seats[trainNum * (stationNum - 1) + i] += num;
+      seats[i] += num;
     }
   }
-};
-
-struct Station {
-  String40 station; //station name
-  int trainData; //where train data is stored
-  int stationNum; //index of the station in the train
-  auto operator<=>(const Station &rhs) const = default;
 };
 
 struct Line {
@@ -211,10 +241,11 @@ struct Line {
 };
 
 namespace Trains {
-  PersistentMap<Train, 1000000> unreleasedTrainMap("unreleased_train");
-  PersistentMap<Train, 1000000> releasedTrainMap("released_train");
-  PersistentSet<Station, 1000000> stationMap("station");
-  SimpleFile<TrainInfo, 10000000> trainDataFile("train_data");
+  PersistentMap<Train, 100000> unreleasedTrainMap("unreleased_train");
+  PersistentMap<Train, 100000> releasedTrainMap("released_train");
+  PersistentSet<Station, 100000> stationMap("station");
+  SimpleFile<TrainInfo, 5000000> trainDataFile("train_data");
+  SimpleFile<Seats, 5000000> seatDataFile("seat_data");
 
   bool addTrain(const TrainInfo &trainInfo) {
     String20 index = trainInfo.trainID;
@@ -240,7 +271,7 @@ namespace Trains {
     if (!releasedTrainMap.insert(train)) {
       throw;
     }
-    TrainInfo *trainInfo = trainDataFile.get(train.trainData, false);
+    TrainInfo *trainInfo = trainDataFile.get(train.trainData, true);
     for (int i = 0; i < trainInfo->stationNum; i++) {
       stationMap.insert(Station{trainInfo->stationNames[i], train.trainData, i});
     }
