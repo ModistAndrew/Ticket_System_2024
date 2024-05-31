@@ -17,6 +17,9 @@ void checkCache() {
 int main() {
 //  freopen("testcases/pressure_1_easy/44.in", "r", stdin);
 //  freopen("test.out", "w", stdout);
+  std::ios::sync_with_stdio(false);
+  std::cin.tie(nullptr);
+  std::cout.tie(nullptr);
   Commands::init();
   while (Commands::running) {
     std::string input;
