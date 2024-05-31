@@ -243,8 +243,8 @@ struct Line {
 namespace Trains {
   PersistentMap<Train, 100000> unreleasedTrainMap("unreleased_train");
   PersistentMap<Train, 100000> releasedTrainMap("released_train");
-  PersistentSet<Station, 100000> stationMap("station");
-  SimpleFile<TrainInfo, 10000000> trainDataFile("train_data");
+  PersistentSet<Station, 1000000> stationMap("station");
+  SimpleFile<TrainInfo, 100000000> trainDataFile("train_data");
   SimpleFile<Seats, 1000000> seatDataFile("seat_data");
 
   bool addTrain(const TrainInfo &trainInfo) {
