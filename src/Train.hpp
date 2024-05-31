@@ -48,7 +48,7 @@ struct Station {
 };
 
 namespace Trains {
-  extern SimpleFile<Seats, 5000000> seatDataFile;
+  extern SimpleFile<Seats, 1000000> seatDataFile;
 }
 
 struct TrainInfo {
@@ -244,8 +244,8 @@ namespace Trains {
   PersistentMap<Train, 100000> unreleasedTrainMap("unreleased_train");
   PersistentMap<Train, 100000> releasedTrainMap("released_train");
   PersistentSet<Station, 100000> stationMap("station");
-  SimpleFile<TrainInfo, 5000000> trainDataFile("train_data");
-  SimpleFile<Seats, 5000000> seatDataFile("seat_data");
+  SimpleFile<TrainInfo, 10000000> trainDataFile("train_data");
+  SimpleFile<Seats, 1000000> seatDataFile("seat_data");
 
   bool addTrain(const TrainInfo &trainInfo) {
     String20 index = trainInfo.trainID;
