@@ -321,7 +321,7 @@ class PersistentMap { //use T::index as key
 
   TreeNode dummy; //there is a fake tree node which always points to the root
   FileStorage<TreeNode, int, MAX_SIZE, CACHE_SIZE> treeNodeStorage; //int is the index of the root
-  FileStorage<LeafNode, int, MAX_SIZE, CACHE_SIZE / 4> leafNodeStorage; //int is the size
+  FileStorage<LeafNode, int, MAX_SIZE, 0> leafNodeStorage; //int is the size
 
   NodePtr getPtr(int index, bool dirty) {
     if (index == -1) {

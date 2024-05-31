@@ -74,9 +74,7 @@ public:
       it->second.data = T(tmp);
       cacheSize += tmp.length(); //use string length as cache size
     }
-    if (dirty) {
-      it->second.dirty = true;
-    }
+    it->second.dirty = true;
     return &it->second.data;
   }
 };
