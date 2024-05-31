@@ -15,12 +15,12 @@ using std::fstream;
 using std::ifstream;
 using std::ofstream;
 
-template<int CACHE_SIZE = 10000>
+template<typename T, int CACHE_SIZE = 100000>
 class SimpleFile { //you can write a string at end of file and read a string randomly
   fstream file;
   string fileName;
   struct Cache {
-    std::string data;
+    T data;
     bool dirty = false;
   };
   map<int, Cache> cacheMap;
@@ -36,11 +36,11 @@ public:
   }
 
   void checkCache() {
-    if(cacheSize > CACHE_SIZE) {
-      for(auto it = cacheMap.begin(); it != cacheMap.end(); it++) {
-        if(it->second.dirty) {
+    if (cacheSize > CACHE_SIZE) {
+      for (auto it = cacheMap.begin(); it != cacheMap.end(); it++) {
+        if (it->second.dirty) {
           file.seekp(it->first);
-          file << it->second.data;
+          file << it->second.data.toString();
         }
       }
       cacheMap.clear();
@@ -49,28 +49,30 @@ public:
   }
 
   ~SimpleFile() {
-    for(auto it = cacheMap.begin(); it != cacheMap.end(); it++) {
-      if(it->second.dirty) {
+    for (auto it = cacheMap.begin(); it != cacheMap.end(); it++) {
+      if (it->second.dirty) {
         file.seekp(it->first);
-        file << it->second.data;
+        file << it->second.data.toString();
       }
     }
     file.close();
   }
 
-  int write(const std::string &str) {
+  int write(const T &str) {
     int ret = file.seekp(0, std::ios::end).tellp();
-    file << str << '\n';
+    file << str.toString() << '\n';
     return ret;
   }
 
-  std::string *get(int pos, bool dirty) {
+  T *get(int pos, bool dirty) {
     auto it = cacheMap.find(pos);
     if (it == cacheMap.end()) {
       it = cacheMap.insert({pos, {}}).first;
       file.seekg(pos);
-      std::getline(file, it->second.data);
-      cacheSize+=it->second.data.length() + sizeof(Cache);
+      std::string tmp;
+      std::getline(file, tmp);
+      it->second.data = T(tmp);
+      cacheSize += tmp.length(); //use string length as cache size
     }
     if (dirty) {
       it->second.dirty = true;

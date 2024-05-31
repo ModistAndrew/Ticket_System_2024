@@ -23,7 +23,6 @@ struct Train {
 };
 
 struct TrainInfo {
-  std::string *base = nullptr; //may be nullptr when first storing
   std::string trainID;
   int stationNum;
   int seatNum;
@@ -48,9 +47,8 @@ struct TrainInfo {
     }
   }
 
-  explicit TrainInfo(std::string *s) {
-    base = s;
-    vector<std::string> v = parseVector(*s, ' ', 11);
+  explicit TrainInfo(const std::string& s) {
+    vector<std::string> v = parseVector(s, ' ', 11);
     trainID = v[0];
     stationNum = parseInt(v[1]);
     seatNum = parseInt(v[2]);
@@ -78,10 +76,6 @@ struct TrainInfo {
     v[9] = type;
     v[10] = toFixedStringIntVector(6, seats, totalCount * (stationNum - 1));
     return toStringVector(v, ' ', 11);
-  }
-
-  void store() {
-    *base = toString();
   }
 
   int toTrainNum(int startDate) const {
@@ -152,7 +146,6 @@ struct TrainInfo {
     for (int i = startStationIndex; i < endStationIndex; i++) {
       seats[trainNum * (stationNum - 1) + i] -= num;
     }
-    store();
     return num * getPrice(startStationIndex, endStationIndex);
   }
 
@@ -160,7 +153,6 @@ struct TrainInfo {
     for (int i = startStationIndex; i < endStationIndex; i++) {
       seats[trainNum * (stationNum - 1) + i] += num;
     }
-    store();
   }
 };
 
@@ -222,15 +214,14 @@ namespace Trains {
   PersistentMap<Train> unreleasedTrainMap("unreleased_train");
   PersistentMap<Train> releasedTrainMap("released_train");
   PersistentSet<Station> stationMap("station");
-  SimpleFile trainDataFile("train_data");
+  SimpleFile<TrainInfo> trainDataFile("train_data");
 
   bool addTrain(const TrainInfo &trainInfo) {
     String20 index = trainInfo.trainID;
-    std::string data = trainInfo.toString();
     if (unreleasedTrainMap.get(index).second || releasedTrainMap.get(index).second) {
       return false;
     }
-    Train train{index, trainDataFile.write(data)};
+    Train train{index, trainDataFile.write(trainInfo)};
     unreleasedTrainMap.insert(train);
     return true;
   }
@@ -249,23 +240,23 @@ namespace Trains {
     if (!releasedTrainMap.insert(train)) {
       throw;
     }
-    TrainInfo trainInfo = TrainInfo(trainDataFile.get(train.trainData, false));
-    for (int i = 0; i < trainInfo.stationNum; i++) {
-      stationMap.insert(Station{trainInfo.stationNames[i], train.trainData, i});
+    TrainInfo *trainInfo = trainDataFile.get(train.trainData, false);
+    for (int i = 0; i < trainInfo->stationNum; i++) {
+      stationMap.insert(Station{trainInfo->stationNames[i], train.trainData, i});
     }
     return true;
   }
 
-  Optional<TrainInfo> getTrain(const String20 &index, bool dirty, bool shouldRelease) {
+  Optional<TrainInfo*> getTrain(const String20 &index, bool dirty, bool shouldRelease) {
     if (!shouldRelease) {
       auto it1 = unreleasedTrainMap.get(index);
       if (it1.second) {
-        return {TrainInfo(trainDataFile.get(it1.first->trainData, dirty))};
+        return {trainDataFile.get(it1.first->trainData, dirty)};
       }
     }
     auto it2 = releasedTrainMap.get(index);
     if (it2.second) {
-      return {TrainInfo(trainDataFile.get(it2.first->trainData, dirty))};
+      return {trainDataFile.get(it2.first->trainData, dirty)};
     }
     return {};
   }
@@ -276,16 +267,16 @@ namespace Trains {
     priority_queue<Line> queue(isPrice ? Line::cmpPrice : Line::cmpTime);
     while (!it1.end() && it1->station == from && !it2.end() && it2->station == to) {
       if (it1->trainData == it2->trainData && it1->stationNum < it2->stationNum) {
-        TrainInfo trainInfo = TrainInfo(trainDataFile.get(it1->trainData, false));
-        int trainNum = trainInfo.findTrainNum(date, it1->stationNum);
-        if (trainNum >= 0 && trainNum < trainInfo.totalCount) {
-          Chrono departure = trainInfo.getDeparture(trainNum, it1->stationNum);
-          Chrono arrival = trainInfo.getArrival(trainNum, it2->stationNum);
-          int seat = trainInfo.getMaxSeat(trainNum, it1->stationNum, it2->stationNum);
-          queue.push(Line{trainInfo.trainID,
+        TrainInfo* trainInfo = trainDataFile.get(it1->trainData, false);
+        int trainNum = trainInfo->findTrainNum(date, it1->stationNum);
+        if (trainNum >= 0 && trainNum < trainInfo->totalCount) {
+          Chrono departure = trainInfo->getDeparture(trainNum, it1->stationNum);
+          Chrono arrival = trainInfo->getArrival(trainNum, it2->stationNum);
+          int seat = trainInfo->getMaxSeat(trainNum, it1->stationNum, it2->stationNum);
+          queue.push(Line{trainInfo->trainID,
                           from, departure,
                           to, arrival,
-                          trainInfo.getPrice(it1->stationNum, it2->stationNum),
+                          trainInfo->getPrice(it1->stationNum, it2->stationNum),
                           seat,
                           arrival.toTick() - departure.toTick()});
         }
@@ -306,60 +297,60 @@ namespace Trains {
   bool queryTransfer(const String40 &from, const String40 &to, int date, bool isPrice) {
     auto it1 = stationMap.find({from, 0, 0});
     auto it2 = stationMap.find({to, 0, 0});
-    list<TrainInfo> trainsFrom;
-    list<TrainInfo> trainsTo;
+    list<TrainInfo*> trainsFrom;
+    list<TrainInfo*> trainsTo;
     while (!it1.end() && it1->station == from) {
-      trainsFrom.push_back(TrainInfo(trainDataFile.get(it1->trainData, false)));
+      trainsFrom.push_back(trainDataFile.get(it1->trainData, false));
       it1++;
     }
     while (!it2.end() && it2->station == to) {
-      trainsTo.push_back(TrainInfo(trainDataFile.get(it2->trainData, false)));
+      trainsTo.push_back(trainDataFile.get(it2->trainData, false));
       it2++;
     }
     priority_queue<pair<Line, Line>> queue(isPrice ? Line::cmpPricePair : Line::cmpTimePair);
     for (const auto &trainFrom: trainsFrom) {
       for (const auto &trainTo: trainsTo) {
-        if(trainFrom.trainID == trainTo.trainID) {
+        if(trainFrom->trainID == trainTo->trainID) {
           continue;
         }
         map<String40, int> stationIndicesFrom, stationIndicesTo;
-        for (int i = 0; i < trainFrom.stationNum; i++) {
-          stationIndicesFrom[trainFrom.stationNames[i]] = i;
+        for (int i = 0; i < trainFrom->stationNum; i++) {
+          stationIndicesFrom[trainFrom->stationNames[i]] = i;
         }
-        for (int i = 0; i < trainTo.stationNum; i++) {
-          stationIndicesTo[trainTo.stationNames[i]] = i;
+        for (int i = 0; i < trainTo->stationNum; i++) {
+          stationIndicesTo[trainTo->stationNames[i]] = i;
         }
         int indexFrom = stationIndicesFrom[from];
         int indexTo = stationIndicesTo[to];
-        for (int intersectionIndexFrom = indexFrom + 1; intersectionIndexFrom < trainFrom.stationNum; intersectionIndexFrom++) {
-          String40 intersection = trainFrom.stationNames[intersectionIndexFrom];
+        for (int intersectionIndexFrom = indexFrom + 1; intersectionIndexFrom < trainFrom->stationNum; intersectionIndexFrom++) {
+          String40 intersection = trainFrom->stationNames[intersectionIndexFrom];
           auto it = stationIndicesTo.find(intersection);
           if (it != stationIndicesTo.end()) {
             int intersectionIndexTo = it->second;
             if (intersectionIndexTo < indexTo) {
-              int trainNumFrom = trainFrom.findTrainNum(date, indexFrom);
-              if (trainNumFrom < 0 || trainNumFrom >= trainFrom.totalCount) {
+              int trainNumFrom = trainFrom->findTrainNum(date, indexFrom);
+              if (trainNumFrom < 0 || trainNumFrom >= trainFrom->totalCount) {
                 continue;
               }
-              Chrono departureFrom = trainFrom.getDeparture(trainNumFrom, indexFrom);
-              Chrono arrivalFrom = trainFrom.getArrival(trainNumFrom, intersectionIndexFrom);
-              int trainNumTo = trainTo.findBestTrainNum(arrivalFrom, intersectionIndexTo);
+              Chrono departureFrom = trainFrom->getDeparture(trainNumFrom, indexFrom);
+              Chrono arrivalFrom = trainFrom->getArrival(trainNumFrom, intersectionIndexFrom);
+              int trainNumTo = trainTo->findBestTrainNum(arrivalFrom, intersectionIndexTo);
               if (trainNumTo < 0) {
                 continue;
               }
-              Chrono departureTo = trainTo.getDeparture(trainNumTo, intersectionIndexTo);
-              Chrono arrivalTo = trainTo.getArrival(trainNumTo, indexTo);
-              queue.push({Line{trainFrom.trainID,
+              Chrono departureTo = trainTo->getDeparture(trainNumTo, intersectionIndexTo);
+              Chrono arrivalTo = trainTo->getArrival(trainNumTo, indexTo);
+              queue.push({Line{trainFrom->trainID,
                                from, departureFrom,
                                intersection, arrivalFrom,
-                               trainFrom.getPrice(indexFrom, intersectionIndexFrom),
-                               trainFrom.getMaxSeat(trainNumFrom, indexFrom, intersectionIndexFrom),
+                               trainFrom->getPrice(indexFrom, intersectionIndexFrom),
+                               trainFrom->getMaxSeat(trainNumFrom, indexFrom, intersectionIndexFrom),
                                arrivalFrom.toTick() - departureFrom.toTick()},
-                          Line{trainTo.trainID,
+                          Line{trainTo->trainID,
                                intersection, departureTo,
                                to, arrivalTo,
-                               trainTo.getPrice(intersectionIndexTo, indexTo),
-                               trainTo.getMaxSeat(trainNumTo, intersectionIndexTo, indexTo),
+                               trainTo->getPrice(intersectionIndexTo, indexTo),
+                               trainTo->getMaxSeat(trainNumTo, intersectionIndexTo, indexTo),
                                arrivalTo.toTick() - departureTo.toTick()}});
             }
           }

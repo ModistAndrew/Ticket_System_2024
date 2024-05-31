@@ -160,7 +160,7 @@ namespace Commands {
     if (!train.present) {
       return "-1";
     }
-    TrainInfo &trainInfo = train.value;
+    TrainInfo &trainInfo = *train.value;
     int trainNum = trainInfo.toTrainNum(parseDate(command.getParam('d')));
     if (trainNum < 0 || trainNum >= trainInfo.totalCount) {
       return "-1";
@@ -191,7 +191,7 @@ namespace Commands {
     if (!user.present) {
       return "-1";
     }
-    TrainInfo &trainInfo = train.value;
+    TrainInfo &trainInfo = *train.value;
     int startStation = trainInfo.searchStationIndex(command.getParam('f'));
     int endStation = trainInfo.searchStationIndex(command.getParam('t'));
     if (startStation < 0 || endStation < 0 || startStation >= endStation) {

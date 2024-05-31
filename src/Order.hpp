@@ -103,7 +103,7 @@ namespace Orders {
     if (!train.present) {
       throw;
     }
-    TrainInfo &trainInfo = train.value;
+    TrainInfo &trainInfo = *train.value;
     trainInfo.refund(orderNow.trainNum, orderNow.fromId, orderNow.toId, orderNow.num);
     auto itQueue = orderQueueMap.find({orderNow.trainID, orderNow.trainNum});
     list<int> toErase;

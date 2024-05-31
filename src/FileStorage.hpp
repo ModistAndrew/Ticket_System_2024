@@ -138,6 +138,7 @@ public:
     auto it = cacheMap.find(pos);
     if(it != cacheMap.end()) {
       cacheMap.erase(it);
+      cacheSize -= sizeof(Cache);
     }
     int nxt = getEmpty();
     setEmpty(index);
