@@ -10,7 +10,7 @@ using std::fstream;
 using std::ifstream;
 using std::ofstream;
 
-template<class T, class INFO, int MAX_SIZE, int CACHE_SIZE>
+template<class T, class INFO, int CACHE_SIZE>
 class FileStorage {
   struct Cache {
     T data;
@@ -104,9 +104,6 @@ public:
     file.seekp(index);
     file.write(reinterpret_cast<const char *>(&t), T_SIZE);
     setEmpty(nxt);
-    if (getPos(index) >= MAX_SIZE) {
-      throw FileSizeExceeded();
-    }
     return index;
   }
 

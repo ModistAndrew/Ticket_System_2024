@@ -42,13 +42,30 @@ struct Seats {
 
 struct Station {
   String40 station; //station name
+  String20 trainID; //train ID
   int trainData; //where train data is stored
   int stationNum; //index of the station in the train
-  auto operator<=>(const Station &rhs) const = default;
+  auto operator<=>(const Station &rhs) const {
+    if(auto cmp = station <=> rhs.station; cmp != 0) {
+      return cmp;
+    }
+    if(auto cmp = trainData <=> rhs.trainData; cmp != 0) {
+      return cmp;
+    }
+    return stationNum <=> rhs.stationNum;
+  }
+
+  auto operator==(const Station &rhs) const {
+    return station == rhs.station && trainData == rhs.trainData && stationNum == rhs.stationNum;
+  }
+
+  static Station min(const String40 &station) {
+    return {station, {}, 0, 0};
+  }
 };
 
 namespace Trains {
-  extern SimpleFile<Seats, 100000000> seatDataFile;
+  extern SimpleFile<Seats, 0> seatDataFile;
 }
 
 struct TrainInfo {
@@ -240,12 +257,21 @@ struct Line {
   }
 };
 
+struct Intersection {
+  String20 trainID1;
+  String20 trainID2;
+  int intersectionIndex1;
+  int intersectionIndex2;
+  auto operator<=>(const Intersection &rhs) const = default;
+};
+
 namespace Trains {
   PersistentMap<Train, 1000000> unreleasedTrainMap("unreleased_train");
   PersistentMap<Train, 1000000> releasedTrainMap("released_train");
   PersistentSet<Station, 100000000> stationMap("station");
   SimpleFile<TrainInfo, 100000000> trainDataFile("train_data");
-  SimpleFile<Seats, 100000000> seatDataFile("seat_data");
+  SimpleFile<Seats, 0> seatDataFile("seat_data");
+  PersistentSet<Intersection, 0> intersectionMap("intersection");
 
   bool addTrain(const TrainInfo &trainInfo) {
     String20 index = trainInfo.trainID;
@@ -273,7 +299,14 @@ namespace Trains {
     }
     TrainInfo *trainInfo = trainDataFile.get(train.trainData, true);
     for (int i = 0; i < trainInfo->stationNum; i++) {
-      stationMap.insert(Station{trainInfo->stationNames[i], train.trainData, i});
+      const std::string& currentStation = trainInfo->stationNames[i];
+      auto intersection = stationMap.find(Station::min(currentStation));
+      while (!intersection.end() && intersection->station == currentStation) {
+        intersectionMap.insert({trainInfo->trainID, intersection->trainID, i, intersection->stationNum});
+        intersectionMap.insert({intersection->trainID, trainInfo->trainID, intersection->stationNum, i});
+        intersection++;
+      }
+      stationMap.insert(Station{trainInfo->stationNames[i], trainInfo->trainID, train.trainData, i});
     }
     return true;
   }
@@ -293,8 +326,8 @@ namespace Trains {
   }
 
   void queryTicket(const String40 &from, const String40 &to, int date, bool isPrice) {
-    auto it1 = stationMap.find({from, 0, 0});
-    auto it2 = stationMap.find({to, 0, 0});
+    auto it1 = stationMap.find(Station::min(from));
+    auto it2 = stationMap.find(Station::min(to));
     priority_queue<Line> queue(isPrice ? Line::cmpPrice : Line::cmpTime);
     while (!it1.end() && it1->station == from && !it2.end() && it2->station == to) {
       if (it1->trainData == it2->trainData && it1->stationNum < it2->stationNum) {
@@ -326,8 +359,8 @@ namespace Trains {
   }
 
   bool queryTransfer(const String40 &from, const String40 &to, int date, bool isPrice) {
-    auto it1 = stationMap.find({from, 0, 0});
-    auto it2 = stationMap.find({to, 0, 0});
+    auto it1 = stationMap.find(Station::min(from));
+    auto it2 = stationMap.find(Station::min(to));
     list<TrainInfo*> trainsFrom;
     list<TrainInfo*> trainsTo;
     while (!it1.end() && it1->station == from) {
