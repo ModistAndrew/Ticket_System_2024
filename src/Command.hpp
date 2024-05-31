@@ -83,7 +83,7 @@ namespace Commands {
          currentAccount.value->privilege <= queryAccount.value->privilege)) {
       return "-1";
     }
-    std::cout << queryAccount.value;
+    std::cout << *queryAccount.value;
     return "";
   }
 
