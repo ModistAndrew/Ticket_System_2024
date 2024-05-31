@@ -36,7 +36,6 @@ public:
   }
 
   void checkCache() {
-//    std::cerr << cacheSize << ' ' << cacheMap.size() << std::endl;
     if (cacheSize > CACHE_SIZE) {
       for (auto it = cacheMap.begin(); it != cacheMap.end(); it++) {
         if (it->second.dirty) {
