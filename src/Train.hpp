@@ -241,11 +241,11 @@ struct Line {
 };
 
 namespace Trains {
-  PersistentMap<Train, 100000000> unreleasedTrainMap("unreleased_train");
-  PersistentMap<Train, 100000000> releasedTrainMap("released_train");
+  PersistentMap<Train, 1000000> unreleasedTrainMap("unreleased_train");
+  PersistentMap<Train, 1000000> releasedTrainMap("released_train");
   PersistentSet<Station, 100000000> stationMap("station");
   SimpleFile<TrainInfo, 100000000> trainDataFile("train_data");
-  SimpleFile<Seats, 0> seatDataFile("seat_data");
+  SimpleFile<Seats, 100000000> seatDataFile("seat_data");
 
   bool addTrain(const TrainInfo &trainInfo) {
     String20 index = trainInfo.trainID;
