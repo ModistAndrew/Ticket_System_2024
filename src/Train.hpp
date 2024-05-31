@@ -48,7 +48,7 @@ struct Station {
 };
 
 namespace Trains {
-  extern SimpleFile<Seats, 0> seatDataFile;
+  extern SimpleFile<Seats, 100000000> seatDataFile;
 }
 
 struct TrainInfo {
