@@ -94,14 +94,6 @@ class PersistentMultiMap {
     void markDirty() { //set current node as dirty
       set->getPtr(leafPos, true);
     }
-
-    int getLeafPos() {
-      return leafPos;
-    }
-
-    int getPos() {
-      return pos;
-    }
   };
 
   class NodePtr {

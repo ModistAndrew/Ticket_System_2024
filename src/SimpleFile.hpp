@@ -8,7 +8,7 @@
 #include <fstream>
 #include <filesystem>
 #include "Exceptions.hpp"
-#include "map.hpp"
+#include "Util.hpp"
 
 using std::string;
 using std::fstream;
@@ -23,10 +23,10 @@ class SimpleFile { //you can write a string at end of file and read a string ran
     std::string data;
     bool dirty = false;
   };
-  map<int, Cache *> cacheMap;
+  map<int, Cache> cacheMap;
   int cacheSize = 0;
 public:
-  SimpleFile(const string &file_name) : fileName("storage/" + file_name + ".dat") {
+  explicit SimpleFile(const string &file_name) : fileName("storage/" + file_name + ".dat") {
     if (!std::filesystem::exists(fileName)) {
       std::filesystem::create_directory("storage");
       file.open(fileName, std::ios::out | std::ios::binary);
@@ -38,24 +38,22 @@ public:
   void checkCache() {
     if(cacheSize > CACHE_SIZE) {
       for(auto it = cacheMap.begin(); it != cacheMap.end(); it++) {
-        if(it->second->dirty) {
+        if(it->second.dirty) {
           file.seekp(it->first);
-          file << it->second->data;
+          file << it->second.data;
         }
-        delete it->second;
-        cacheMap.erase(it);
       }
+      cacheMap.clear();
       cacheSize = 0;
     }
   }
 
   ~SimpleFile() {
-    for (auto i: cacheMap) {
-      if (i.second->dirty) {
-        file.seekp(i.first);
-        file << i.second->data;
+    for(auto it = cacheMap.begin(); it != cacheMap.end(); it++) {
+      if(it->second.dirty) {
+        file.seekp(it->first);
+        file << it->second.data;
       }
-      delete i.second;
     }
     file.close();
   }
@@ -69,15 +67,15 @@ public:
   std::string *get(int pos, bool dirty) {
     auto it = cacheMap.find(pos);
     if (it == cacheMap.end()) {
-      it = cacheMap.insert({pos, new Cache()}).first;
+      it = cacheMap.insert({pos, {}}).first;
       file.seekg(pos);
-      std::getline(file, it->second->data);
-      cacheSize+=it->second->data.size();
+      std::getline(file, it->second.data);
+      cacheSize+=it->second.data.length() + sizeof(Cache);
     }
     if (dirty) {
-      it->second->dirty = true;
+      it->second.dirty = true;
     }
-    return &it->second->data;
+    return &it->second.data;
   }
 };
 

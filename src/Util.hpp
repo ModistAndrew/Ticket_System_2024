@@ -11,6 +11,11 @@
 #include <cstring>
 #include <cmath>
 #include "StringParser.hpp"
+#include <map>
+using std::map;
+#include "priority_queue.hpp"
+#include <list>
+using std::list;
 
 template<typename T>
 T *lower_bound(T *first, T *last, const T &val) {
