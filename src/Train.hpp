@@ -5,8 +5,6 @@
 #ifndef TICKETSYSTEM2024_TRAIN_HPP
 #define TICKETSYSTEM2024_TRAIN_HPP
 
-#include <utility>
-
 #include "PersistentMap.hpp"
 #include "SimpleFile.hpp"
 #include "PersistentSet.hpp"
