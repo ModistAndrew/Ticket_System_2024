@@ -248,7 +248,7 @@ namespace Trains {
   PersistentMap<Train, 1000000> unreleasedTrainMap("unreleased_train");
   PersistentMap<Train, 1000000> releasedTrainMap("released_train");
   PersistentSet<Station, 1000000> stationMap("station");
-  SimpleFile<TrainInfo, 5000000> trainDataFile("train_data");
+  SimpleFile<TrainInfo, 4000000> trainDataFile("train_data");
   SimpleFile<Seats, 0> seatDataFile("seat_data");
 
   bool addTrain(const TrainInfo &trainInfo) {
@@ -329,32 +329,41 @@ namespace Trains {
     }
   }
 
+  struct TrainStationInfo {
+    String40 station;
+    int fromTrain;
+    int fromIndex;
+    int intersectionIndexFrom;
+    auto operator<=>(const TrainStationInfo &rhs) const = default;
+  };
+
   bool queryTransfer(const String40 &from, const String40 &to, int date, bool isPrice) {
     priority_queue<pair<Line, Line>> queue(isPrice ? Line::cmpPricePair : Line::cmpTimePair);
     auto it1 = stationMap.find({from, 0, 0});
     auto it2 = stationMap.find({to, 0, 0});
-    multimap<String40, pair<pair<TrainInfo *, int>, int>> stationIndices;
+    set<TrainStationInfo> stationIndices;
+    list<TrainInfo*> trainFromList;
     while (!it1.end() && it1->station == from) {
       TrainInfo *trainFrom = trainDataFile.get(it1->trainData, false);
       for (int intersectionIndexFrom = it1->stationNum + 1;
            intersectionIndexFrom < trainFrom->stationNum; intersectionIndexFrom++) {
-        stationIndices.insert(
-          {trainFrom->stationNames[intersectionIndexFrom], {{trainFrom, it1->stationNum}, intersectionIndexFrom}});
+        stationIndices.insert({trainFrom->stationNames[intersectionIndexFrom], (int)trainFromList.size(), it1->stationNum, intersectionIndexFrom});
       }
+      trainFromList.push_back(trainFrom);
       it1++;
     }
     while (!it2.end() && it2->station == to) {
       TrainInfo *trainTo = trainDataFile.get(it2->trainData, false);
       for (int intersectionIndexTo = 0; intersectionIndexTo < it2->stationNum; intersectionIndexTo++) {
-        auto range = stationIndices.equal_range(trainTo->stationNames[intersectionIndexTo]);
-        for (auto candidate = range.first; candidate != range.second; candidate++) {
-          TrainInfo *trainFrom = candidate->second.first.first;
+        const String40& intersection = trainTo->stationNames[intersectionIndexTo];
+        auto range = stationIndices.lower_bound({intersection, 0, 0, 0});
+        for (auto candidate = range; candidate!=stationIndices.end() && candidate->station == intersection; candidate++) {
+          TrainInfo *trainFrom = trainFromList[candidate->fromTrain];
           if(trainFrom->trainID == trainTo->trainID) {
             continue;
           }
-          String40 intersection = candidate->first;
-          int indexFrom = candidate->second.first.second;
-          int intersectionIndexFrom = candidate->second.second;
+          int indexFrom = candidate->fromIndex;
+          int intersectionIndexFrom = candidate->intersectionIndexFrom;
           int indexTo = it2->stationNum;
           int trainNumFrom = trainFrom->findTrainNum(date, indexFrom);
           if (trainNumFrom < 0 || trainNumFrom >= trainFrom->totalCount) {
