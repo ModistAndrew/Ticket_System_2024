@@ -109,13 +109,13 @@ namespace Orders {
     list<int> toErase;
     while (!itQueue.end() && itQueue->val.train.first == orderNow.trainID && itQueue->val.train.second == orderNow.trainNum) {
       auto orderPendingRef = orderMap.get(itQueue->val.userID, itQueue->val.tick);
-      if(!orderPendingRef.second) {
+      if(!orderPendingRef.present) {
         throw;
       }
-      Order &orderPending = orderPendingRef.first->val;
+      Order &orderPending = orderPendingRef.value->val;
       if (orderPending.status == 1) {
         if (trainInfo.buy(orderPending.trainNum, orderPending.fromId, orderPending.toId, orderPending.num) >= 0) {
-          orderPendingRef.first.markDirty();
+          orderPendingRef.value.markDirty();
           orderPending.status = 0;
         }
       }

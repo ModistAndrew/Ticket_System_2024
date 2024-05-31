@@ -23,10 +23,15 @@ class PersistentMap { //use T::index as key
 
   class iterator {
     PersistentMap *set;
-    LeafNode *leaf;
+    int leafPos;
     int pos;
+    LeafNode *leaf;
+
   public:
-    iterator(PersistentMap *set, LeafNode *leaf, int pos) : set(set), leaf(leaf), pos(pos) {}
+    iterator() = default;
+
+    iterator(PersistentMap *set, int leafPos, int pos) : set(set), leafPos(leafPos), pos(pos),
+                                                              leaf(set->getPtr(leafPos, false).leafNode()) {}
 
     iterator &operator++() {
       if (leaf == nullptr) {
@@ -34,7 +39,8 @@ class PersistentMap { //use T::index as key
       }
       pos++;
       if (pos == leaf->size) {
-        leaf = leaf->next == -1 ? nullptr : set->getPtr(leaf->next, false).leafNode();
+        leafPos = leaf->next;
+        leaf = set->getPtr(leafPos, false).leafNode();
         pos = 0;
       }
       return *this;
@@ -70,6 +76,10 @@ class PersistentMap { //use T::index as key
 
     bool end() {
       return leaf == nullptr;
+    }
+
+    void markDirty() { //set current node as dirty
+      set->getPtr(leafPos, true);
     }
   };
 
@@ -108,11 +118,11 @@ class PersistentMap { //use T::index as key
       }
     }
 
-    iterator find(PersistentMap *set, const INDEX &val) {
+    iterator find(PersistentMap *set, const INDEX &val, int loc) {
       if (isLeaf) {
-        return leafNode()->find(set, val);
+        return leafNode()->find(set, val, loc);
       } else {
-        return treeNode()->find(set, val);
+        return treeNode()->find(set, val, loc);
       }
     }
   };
@@ -122,9 +132,9 @@ class PersistentMap { //use T::index as key
     INDEX index[SIZE_1 - 1];
     int children[SIZE_1];
 
-    iterator find(PersistentMap *set, const INDEX &val) { //find first no less than val
+    iterator find(PersistentMap *set, const INDEX &val, int loc) { //find first no less than val
       int p = upper_bound(index, index + size - 1, val) - index;
-      return set->getPtr(children[p], false).find(set, val);
+      return set->getPtr(children[p], false).find(set, val, children[p]);
     }
 
     bool insert(PersistentMap *set, const T &val, TreeNode *parent, int pos) { //insert val into this node
@@ -228,9 +238,9 @@ class PersistentMap { //use T::index as key
     T data[SIZE_2];
     int next = -1; //linked list
 
-    iterator find(PersistentMap *set, const INDEX &val) { //find first no less than val
+    iterator find(PersistentMap *set, const INDEX &val, int loc) { //find first no less than val
       int p = lower_index_bound(data, data + size, val) - data;
-      return p == size ? iterator(set, next == -1 ? nullptr : set->getPtr(next, false).leafNode(), 0) : iterator(set, this, p);
+      return p == size ? iterator(set, next, 0) : iterator(set, loc, p);
     }
 
     bool insert(PersistentMap *set, const T &val, TreeNode *parent, int pos) { //insert val into this node
@@ -396,9 +406,9 @@ public:
     return ret;
   }
 
-  pair<iterator, bool> get(const INDEX &val) { //return the iterator first no less than val and whether it equals val
-    iterator it = getRoot().find(this, val);
-    return {it, !it.end() && it->index() == val};
+  Optional<iterator> get(const INDEX &val) { //return the iterator first no less than val and whether it equals val
+    iterator it = getRoot().find(this, val, dummy.children[0]);
+    return (!it.end() && it->index() == val) ? Optional<iterator>(it) : Optional<iterator>();
   }
 };
 

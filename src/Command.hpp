@@ -60,7 +60,7 @@ namespace Commands {
       return "0";
     } else {
       auto currentAccount = Accounts::getLogged(command.getParam('c'));
-      if (!currentAccount.present || currentAccount.value.privilege <= newAccount.privilege) {
+      if (!currentAccount.present || currentAccount.value->privilege <= newAccount.privilege) {
         return "-1";
       }
       return AccountStorage::add(newAccount) ? "0" : "-1";
@@ -77,10 +77,10 @@ namespace Commands {
 
   std::string queryProfile(const Command &command) {
     auto currentAccount = Accounts::getLogged(command.getParam('c'));
-    auto queryAccount = AccountStorage::get(command.getParam('u'));
+    auto queryAccount = AccountStorage::get(command.getParam('u'), false);
     if (!currentAccount.present || !queryAccount.present ||
-        (currentAccount.value.userID != queryAccount.value.userID &&
-         currentAccount.value.privilege <= queryAccount.value.privilege)) {
+        (currentAccount.value->userID != queryAccount.value->userID &&
+         currentAccount.value->privilege <= queryAccount.value->privilege)) {
       return "-1";
     }
     std::cout << queryAccount.value;
@@ -89,30 +89,29 @@ namespace Commands {
 
   std::string modifyProfile(const Command &command) {
     auto currentAccount = Accounts::getLogged(command.getParam('c'));
-    auto modifyAccount = AccountStorage::get(command.getParam('u'));
+    auto modifyAccount = AccountStorage::get(command.getParam('u'), true);
     if (!currentAccount.present || !modifyAccount.present ||
-        (currentAccount.value.userID != modifyAccount.value.userID &&
-         currentAccount.value.privilege <= modifyAccount.value.privilege)) {
+        (currentAccount.value->userID != modifyAccount.value->userID &&
+         currentAccount.value->privilege <= modifyAccount.value->privilege)) {
       return "-1";
     }
-    Account newAccount = modifyAccount.value;
-    if (!command.getParam('p').empty()) {
-      newAccount.password = command.getParam('p');
-    }
-    if (!command.getParam('n').empty()) {
-      newAccount.name = command.getParam('n');
-    }
-    if (!command.getParam('m').empty()) {
-      newAccount.mailAddr = command.getParam('m');
-    }
+    Account* newAccount = modifyAccount.value;
     if (!command.getParam('g').empty()) {
-      if (command.getIntParam('g') >= currentAccount.value.privilege) {
+      if (command.getIntParam('g') >= currentAccount.value->privilege) {
         return "-1";
       }
-      newAccount.privilege = command.getIntParam('g');
+      newAccount->privilege = command.getIntParam('g');
     }
-    std::cout << newAccount;
-    AccountStorage::modify(newAccount);
+    if (!command.getParam('p').empty()) {
+      newAccount->password = command.getParam('p');
+    }
+    if (!command.getParam('n').empty()) {
+      newAccount->name = command.getParam('n');
+    }
+    if (!command.getParam('m').empty()) {
+      newAccount->mailAddr = command.getParam('m');
+    }
+    std::cout << *newAccount;
     return "";
   }
 
@@ -244,7 +243,7 @@ namespace Commands {
     if (!user.present) {
       return "-1";
     }
-    Orders::printOrders(user.value.userID);
+    Orders::printOrders(user.value->userID);
     return "";
   }
 
@@ -253,7 +252,7 @@ namespace Commands {
     if (!user.present) {
       return "-1";
     }
-    return Orders::refundOrder(user.value.userID, command.getParam('n').empty() ? 1 : command.getIntParam('n')) ? "0" : "-1";
+    return Orders::refundOrder(user.value->userID, command.getParam('n').empty() ? 1 : command.getIntParam('n')) ? "0" : "-1";
   }
 
   std::string queryTransfer(const Command &command) {

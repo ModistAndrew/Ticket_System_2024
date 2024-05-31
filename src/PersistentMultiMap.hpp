@@ -43,6 +43,8 @@ class PersistentMultiMap {
     LeafNode *leaf;
 
   public:
+    iterator() = default;
+
     iterator(PersistentMultiMap *set, int leafPos, int pos) : set(set), leafPos(leafPos), pos(pos),
                                                               leaf(set->getPtr(leafPos, false).leafNode()) {}
 
@@ -434,9 +436,9 @@ public:
     return getRoot().find(this, {val, INT32_MIN}, dummy.children[0]);
   }
   
-  pair<iterator, bool> get(const T0::INDEX &val, int tick) {
+  Optional<iterator> get(const T0::INDEX &val, int tick) {
     iterator it = getRoot().find(this, {val, tick}, dummy.children[0]);
-    return {it, !it.end() && it->val.index() == val && it->tick == tick};
+    return (!it.end() && it->val.index() == val && it->tick == tick) ? Optional<iterator>(it) : Optional<iterator>();
   }
 };
 

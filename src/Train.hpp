@@ -218,7 +218,7 @@ namespace Trains {
 
   bool addTrain(const TrainInfo &trainInfo) {
     String20 index = trainInfo.trainID;
-    if (unreleasedTrainMap.get(index).second || releasedTrainMap.get(index).second) {
+    if (unreleasedTrainMap.get(index).present || releasedTrainMap.get(index).present) {
       return false;
     }
     Train train{index, trainDataFile.write(trainInfo)};
@@ -232,10 +232,10 @@ namespace Trains {
 
   bool releaseTrain(const String20 &index) {
     auto it = unreleasedTrainMap.get(index);
-    if (!it.second) {
+    if (!it.present) {
       return false;
     }
-    Train train = *it.first;
+    Train train = *it.value;
     unreleasedTrainMap.erase(index);
     if (!releasedTrainMap.insert(train)) {
       throw;
@@ -250,13 +250,13 @@ namespace Trains {
   Optional<TrainInfo*> getTrain(const String20 &index, bool dirty, bool shouldRelease) {
     if (!shouldRelease) {
       auto it1 = unreleasedTrainMap.get(index);
-      if (it1.second) {
-        return {trainDataFile.get(it1.first->trainData, dirty)};
+      if (it1.present) {
+        return {trainDataFile.get(it1.value->trainData, dirty)};
       }
     }
     auto it2 = releasedTrainMap.get(index);
-    if (it2.second) {
-      return {trainDataFile.get(it2.first->trainData, dirty)};
+    if (it2.present) {
+      return {trainDataFile.get(it2.value->trainData, dirty)};
     }
     return {};
   }

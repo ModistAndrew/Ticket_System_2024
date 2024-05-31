@@ -16,7 +16,7 @@ struct Account {
   int privilege;
   using INDEX = String20;
 
-  INDEX index() const {
+  const INDEX& index() const {
     return userID;
   }
 
@@ -31,7 +31,7 @@ struct Account {
 };
 
 namespace AccountStorage {
-  PersistentMap<Account, 10000> accountMap("accounts");
+  PersistentMap<Account> accountMap("accounts");
 
   bool empty() {
     return accountMap.empty();
@@ -41,9 +41,15 @@ namespace AccountStorage {
     return accountMap.insert(account);
   }
 
-  Optional<Account> get(const String20 &index) {
+  Optional<Account*> get(const String20 &index, bool dirty) {
     auto ret = accountMap.get(index);
-    return ret.second ? Optional<Account>(*ret.first) : Optional<Account>();
+    if (!ret.present) {
+      return {};
+    }
+    if(dirty) {
+      ret.value.markDirty();
+    }
+    return {ret.value.operator->()};
   }
 
   void modify(const Account &newAccount); // modify the account with the same index. make sure the account exists. may also change logged account
@@ -52,17 +58,17 @@ namespace AccountStorage {
 namespace Accounts {
   map<String20, Account> currentAccounts;
 
-  Optional<Account> getLogged(const String20 &index) {
+  Optional<Account*> getLogged(const String20 &index) {
     auto it = currentAccounts.find(index);
-    return it == currentAccounts.end() ? Optional<Account>() : Optional<Account>(it->second);
+    return it == currentAccounts.end() ? Optional<Account*>() : Optional<Account*>(&it->second);
   }
 
   bool login(const String20 &index, const String30 &password) {
-    auto account = AccountStorage::get(index);
-    if (!account.present || account.value.password != password) {
+    auto account = AccountStorage::get(index, false);
+    if (!account.present || account.value->password != password) {
       return false;
     }
-    return currentAccounts.insert({index, account.value}).second;
+    return currentAccounts.insert({index, *account.value}).second;
   }
 
   bool logout(const String20 &index) {
@@ -72,17 +78,6 @@ namespace Accounts {
     }
     currentAccounts.erase(it);
     return true;
-  }
-}
-
-void AccountStorage::modify(const Account &newAccount) {
-  if(accountMap.erase(newAccount.userID)) {
-    accountMap.insert(newAccount);
-  } else {
-    throw;
-  }
-  if(Accounts::logout(newAccount.userID)) {
-    Accounts::currentAccounts.insert({newAccount.userID, newAccount});
   }
 }
 #endif
