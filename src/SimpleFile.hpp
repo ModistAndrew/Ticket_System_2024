@@ -24,7 +24,7 @@ class SimpleFile { //you can write a string at end of file and read a string ran
     bool dirty = false;
   };
   map<int, Cache *> cacheMap;
-  int cacheCount = 0;
+  int cacheSize = 0;
 public:
   SimpleFile(const string &file_name) : fileName("storage/" + file_name + ".dat") {
     if (!std::filesystem::exists(fileName)) {
@@ -36,7 +36,7 @@ public:
   }
 
   void checkCache() {
-    if(cacheCount * sizeof(Cache) > CACHE_SIZE) {
+    if(cacheSize > CACHE_SIZE) {
       for(auto it = cacheMap.begin(); it != cacheMap.end(); it++) {
         if(it->second->dirty) {
           file.seekp(it->first);
@@ -45,7 +45,7 @@ public:
         delete it->second;
         cacheMap.erase(it);
       }
-      cacheCount = 0;
+      cacheSize = 0;
     }
   }
 
@@ -72,7 +72,7 @@ public:
       it = cacheMap.insert({pos, new Cache()}).first;
       file.seekg(pos);
       std::getline(file, it->second->data);
-      cacheCount++;
+      cacheSize+=it->second->data.size();
     }
     if (dirty) {
       it->second->dirty = true;
