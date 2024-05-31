@@ -31,7 +31,7 @@ struct Account {
 };
 
 namespace AccountStorage {
-  PersistentMap<Account> accountMap("accounts");
+  PersistentMap<Account, 1000000> accountMap("accounts");
 
   bool empty() {
     return accountMap.empty();
