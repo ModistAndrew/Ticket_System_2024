@@ -25,7 +25,7 @@ struct Order {
   int num;
   using INDEX = String20;
 
-  INDEX index() const {
+  const INDEX& index() const {
     return userID;
   }
 
@@ -48,7 +48,7 @@ struct Order {
 struct OrderQueue {
   pair<String20, int> train; //trainID, trainNum
   using INDEX = pair<String20, int>;
-  INDEX index() const {
+  const INDEX& index() const {
     return train;
   }
   String20 userID;
