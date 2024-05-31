@@ -8,7 +8,7 @@
 #include "Util.hpp"
 #include "FileStorage.hpp"
 
-template<typename T0, int CACHE_SIZE = 10000, int MAX_SIZE = 10000>
+template<typename T0, int CACHE_SIZE, int MAX_SIZE = 10000>
 class PersistentMultiMap {
   //use T0+int as key and value. new elements are always inserted at end or first
   //if you want other order, use persistent set instead

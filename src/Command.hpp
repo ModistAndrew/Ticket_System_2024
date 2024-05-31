@@ -292,10 +292,10 @@ namespace Commands {
   std::string run(const std::string &s) {
     Command command(s);
     auto it = commandMap.find(command.name);
-    if (it == commandMap.end()) {
-      throw;
-    }
     std::cout << command.timestamp << ' ';
+    if (it == commandMap.end()) {
+      return "-1";
+    }
     return it->second(command);
   }
 }
