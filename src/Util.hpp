@@ -14,6 +14,8 @@
 #include "map.hpp"
 #include "priority_queue.hpp"
 #include "list.hpp"
+#include <map>
+using std::multimap;
 
 template<typename T>
 T *lower_bound(T *first, T *last, const T &val) {
