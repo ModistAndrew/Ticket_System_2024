@@ -15,7 +15,7 @@ using std::fstream;
 using std::ifstream;
 using std::ofstream;
 
-template<int CACHE_SIZE = 100000>
+template<int CACHE_SIZE = 10000>
 class SimpleFile { //you can write a string at end of file and read a string randomly
   fstream file;
   string fileName;
