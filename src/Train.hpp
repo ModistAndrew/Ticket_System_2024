@@ -7,8 +7,7 @@
 
 #include "persistent_data_structure/PersistentMap.hpp"
 #include "persistent_data_structure/PersistentSet.hpp"
-#include "file_storage/SimpleFile.hpp"
-#include "file_storage/FileBlock.hpp"
+#include "file_storage/SuperFileBlock.hpp"
 #include "util/Util.hpp"
 
 struct Train {
@@ -22,20 +21,14 @@ struct Train {
 };
 
 struct Seats {
-  vector<int> seats;
+  int seats[30];
 
   Seats() = default;
 
-  Seats(int length, int initSeat) : seats(length) {
+  Seats(int length, int initSeat) {
     for (int i = 0; i < length; i++) {
       seats[i] = initSeat;
     }
-  }
-
-  explicit Seats(const std::string &s) : seats(parseFixedIntVector(6, s, s.length() / 6)) {}
-
-  std::string toString() const {
-    return toFixedStringIntVector(6, seats, seats.size());
   }
 
   int &operator[](int i) {
@@ -51,7 +44,7 @@ struct Station {
 };
 
 namespace Trains {
-  extern SimpleFile<Seats> seatDataFile;
+  extern FileStorage<Seats, int, 0> seatDataFile;
 }
 
 struct TrainInfoEncode {
@@ -80,7 +73,7 @@ struct TrainInfo {
   short firstStartDate;
   short totalCount; //total number of trains. from startDate to startDate + totalDate - 1
   char type; //type of the train
-  int seatLoc; //points to the start of the seat info of train 0. step = 6 * stationNum + 1
+  int seatLoc; //points to the start of the seat info of train 0. step = 1
 
   TrainInfo() = default;
 
@@ -88,9 +81,9 @@ struct TrainInfo {
     trainID(std::move(trainID)), stationNum(stationNum), seatNum(seatNum), firstStartDate(firstStartDate),
     totalCount(totalCount), type(type[0]),
     stationNames(stationNum), prices(stationNum), arrivalTimes(stationNum), departureTimes(stationNum),
-    seatLoc(Trains::seatDataFile.write(Seats(stationNum, seatNum))) {
+    seatLoc(Trains::seatDataFile.add(Seats(stationNum, seatNum))) {
     for (int i = 1; i < totalCount; i++) {
-      Trains::seatDataFile.write(Seats(stationNum, seatNum));
+      Trains::seatDataFile.add(Seats(stationNum, seatNum));
     }
   }
 
@@ -170,7 +163,7 @@ struct TrainInfo {
   }
 
   Seats *getSeats(int trainNum, bool dirty) const {
-    return Trains::seatDataFile.get(seatLoc + (6 * stationNum + 1) * trainNum, dirty);
+    return Trains::seatDataFile.get(seatLoc + trainNum, dirty);
   }
 
   int getSeat(int trainNum, int stationIndex) const {
@@ -263,8 +256,8 @@ namespace Trains {
   PersistentMap<Train> unreleasedTrainMap("unreleased_train");
   PersistentMap<Train> releasedTrainMap("released_train");
   PersistentSet<Station> stationMap("station");
-  FileBlock<TrainInfo, 10000, 7000> trainDataFile("train_data");
-  SimpleFile<Seats> seatDataFile("seat_data");
+  SuperFileBlock<TrainInfo, 10000, 7000> trainDataFile("train_data");
+  FileStorage<Seats, int, 0> seatDataFile(0, "seat_data");
 
   bool addTrain(const TrainInfo &trainInfo) {
     String20 index = trainInfo.trainID;

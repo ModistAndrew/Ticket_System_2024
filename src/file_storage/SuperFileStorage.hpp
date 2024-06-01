@@ -11,7 +11,7 @@ using std::ifstream;
 using std::ofstream;
 
 //file storage which saves all data in cache
-//use linear cache. for big cache size.
+//use linear cache. for big cache size. (in fact, it's not a cache)
 template<class T, class INFO, int MAX_SIZE>
 class SuperFileStorage {
   struct Cache {

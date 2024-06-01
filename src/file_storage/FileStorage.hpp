@@ -32,6 +32,14 @@ class FileStorage {
   void setEmpty(int x) {
     empty = x;
   }
+
+  static int getIndex(int loc) {
+    return (loc - INFO_SIZE - INT_SIZE) / T_SIZE;
+  }
+
+  static int getLoc(int index) {
+    return index * T_SIZE + INFO_SIZE + INT_SIZE;
+  }
   //store pointer to first empty just after info len.
   //empty except end has pointer to next empty; check EOF to determine whether at end. (so don't store anything after this)
 public:
@@ -89,10 +97,11 @@ public:
     file.seekp(loc);
     file.write(reinterpret_cast<const char *>(&t), T_SIZE);
     setEmpty(nxt);
-    return loc;
+    return getIndex(loc);
   }
 
-  T *get(int loc, bool dirty) {
+  T *get(int index, bool dirty) {
+    int loc = getLoc(index);
     auto it = cacheMap.find(loc);
     if (it == cacheMap.end()) {
       it = cacheMap.insert({loc, {}}).first;
@@ -105,7 +114,8 @@ public:
     return &it->second.data;
   }
 
-  void remove(int loc) {
+  void remove(int index) {
+    int loc = getLoc(index);
     auto it = cacheMap.find(loc);
     if(it != cacheMap.end()) {
       cacheMap.erase(it);

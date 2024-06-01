@@ -2,8 +2,8 @@
 // Created by zjx on 2024/5/26.
 //
 
-#ifndef TICKETSYSTEM2024_FILE_BLOCK_HPP
-#define TICKETSYSTEM2024_FILE_BLOCK_HPP
+#ifndef TICKETSYSTEM2024_SUPER_FILE_BLOCK_HPP
+#define TICKETSYSTEM2024_SUPER_FILE_BLOCK_HPP
 
 #include <fstream>
 #include <filesystem>
@@ -18,7 +18,7 @@ using std::ofstream;
 //encode T into S with fixed length
 //use linear cache. for big cache size.
 template<typename T, int MAX_SIZE, int MAX_CACHE_COUNT>
-class FileBlock {
+class SuperFileBlock {
   typedef T::ENCODE S;
   struct Cache {
     T data;
@@ -39,7 +39,7 @@ class FileBlock {
   }
 
 public:
-  explicit FileBlock(const string &file_name) : fileName("storage/" + file_name + ".dat") {
+  explicit SuperFileBlock(const string &file_name) : fileName("storage/" + file_name + ".dat") {
     if (!std::filesystem::exists(fileName)) {
       std::filesystem::create_directory("storage");
       file.open(fileName, std::ios::out | std::ios::binary);
@@ -65,7 +65,7 @@ public:
     }
   }
 
-  ~FileBlock() {
+  ~SuperFileBlock() {
     for (int i = 0; i < MAX_SIZE; i++) {
       if (cacheMap[i]) {
         if (cacheMap[i]->dirty) {
