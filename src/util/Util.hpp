@@ -11,7 +11,8 @@
 #include <cstring>
 #include <cmath>
 #include "StringParser.hpp"
-#include "../data_structure/map.hpp"
+#include <map>
+using std::map;
 #include "../data_structure/priority_queue.hpp"
 #include "../data_structure/list.hpp"
 #include "../data_structure/set.hpp"
