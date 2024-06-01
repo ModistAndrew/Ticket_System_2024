@@ -81,11 +81,7 @@ struct TrainInfo {
     trainID(std::move(trainID)), stationNum(stationNum), seatNum(seatNum), firstStartDate(firstStartDate),
     totalCount(totalCount), type(type[0]),
     stationNames(stationNum), prices(stationNum), arrivalTimes(stationNum), departureTimes(stationNum),
-    seatLoc(Trains::seatDataFile.add(Seats(stationNum, seatNum))) {
-    for (int i = 1; i < totalCount; i++) {
-      Trains::seatDataFile.add(Seats(stationNum, seatNum));
-    }
-  }
+    seatLoc(-1) {}
 
   explicit TrainInfo(const TrainInfoEncode &encode) :
     trainID(encode.trainID.toString()), stationNum(encode.stationNum), seatNum(encode.seatNum),
@@ -167,7 +163,7 @@ struct TrainInfo {
   }
 
   int getSeat(int trainNum, int stationIndex) const {
-    return getSeats(trainNum, false)->operator[](stationIndex);
+    return seatLoc < 0 ? seatNum : getSeats(trainNum, false)->operator[](stationIndex);
   }
 
   int getMaxSeat(int trainNum, int startStationIndex, int endStationIndex) const {
@@ -286,6 +282,10 @@ namespace Trains {
     TrainInfo *trainInfo = trainDataFile.get(train.trainData, true);
     for (int i = 0; i < trainInfo->stationNum; i++) {
       stationMap.insert(Station{trainInfo->stationNames[i], train.trainData, i});
+    }
+    trainInfo->seatLoc = Trains::seatDataFile.add(Seats(trainInfo->stationNum, trainInfo->seatNum));
+    for(int i = 1; i < trainInfo->totalCount; i++) {
+      Trains::seatDataFile.add(Seats(trainInfo->stationNum, trainInfo->seatNum));
     }
     return true;
   }
