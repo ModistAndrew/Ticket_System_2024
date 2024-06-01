@@ -14,7 +14,7 @@ class PersistentSet { //use T as key
   struct TreeNode;
   struct LeafNode;
 
-  static constexpr int SIZE = 1000 / sizeof(T) * 2;
+  static constexpr int SIZE = 2048 / sizeof(T) * 2;
 
   static_assert(SIZE >= 4 && SIZE % 2 == 0, "SIZE must be even and at least 4");
 
