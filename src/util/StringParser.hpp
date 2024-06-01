@@ -6,7 +6,7 @@
 #define TICKETSYSTEM2024_STRING_PARSER_HPP
 
 #include <string>
-#include "vector.hpp"
+#include "../data_structure/vector.hpp"
 
 int parseInt(const std::string &s) {
   int x = 0;

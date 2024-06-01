@@ -7,8 +7,8 @@
 
 #include <fstream>
 #include <filesystem>
-#include "Exceptions.hpp"
-#include "Util.hpp"
+#include "../util/Exceptions.hpp"
+#include "../util/Util.hpp"
 
 using std::string;
 using std::fstream;

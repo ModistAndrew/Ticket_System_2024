@@ -1,13 +1,13 @@
-#ifndef TICKETSYSTEM2024_MAP_HPP
-#define TICKETSYSTEM2024_MAP_HPP
+#ifndef TICKETSYSTEM2024_SET_HPP
+#define TICKETSYSTEM2024_SET_HPP
 
-#include "Exceptions.hpp"
+#include "../util/Exceptions.hpp"
 #include "pair.hpp"
 
-template<class Key, class T, class Compare = std::less<Key>>
-class map {
+template<class T, class Compare = std::less<T>>
+class set {
 public:
-  using value_type = pair<const Key, T>;
+  using value_type = T;
 private:
   enum Color {
     DUMMY, RED, BLACK
@@ -35,14 +35,6 @@ private:
 
     static bool black(const Node *p) {
       return !p || p->color == BLACK;
-    }
-
-    const Key &key() const {
-      return data.first;
-    }
-
-    T &value() {
-      return data.second;
     }
 
     Node *leftParent() const {
@@ -315,21 +307,20 @@ public:
   class const_iterator;
 
   class iterator {
-    friend class map;
+    friend class set;
 
-    map *m;
+    set *m;
     Node *ptr; //if ptr == nullptr, it means the iterator is m.end(). may be invalidated by erase!
-    //TODO: use weak_ptr to avoid invalidation
   public:
     using difference_type = std::ptrdiff_t;
-    using value_type = pair<const Key, T>;
+    using value_type = T;
     using pointer = value_type *;
     using reference = value_type &;
     using iterator_category = std::bidirectional_iterator_tag;
 
     iterator() = default;
 
-    iterator(map *m, Node *ptr) : m(m), ptr(ptr) {}
+    iterator(set *m, Node *ptr) : m(m), ptr(ptr) {}
 
     iterator(const iterator &other) : m(other.m), ptr(other.ptr) {}
 
@@ -400,20 +391,20 @@ public:
   };
 
   class const_iterator {
-    friend class map;
+    friend class set;
 
-    const map *m;
+    const set *m;
     const Node *ptr; //if ptr == nullptr, it means the iterator is m.end(). may be invalidated by erase!
   public:
     using difference_type = std::ptrdiff_t;
-    using value_type = pair<const Key, T>;
+    using value_type = T;
     using pointer = value_type *;
     using reference = value_type &;
     using iterator_category = std::bidirectional_iterator_tag;
 
     const_iterator() = default;
 
-    const_iterator(const map *m, const Node *ptr) : m(m), ptr(ptr) {}
+    const_iterator(const set *m, const Node *ptr) : m(m), ptr(ptr) {}
 
     const_iterator(const iterator &other) : m(other.m), ptr(other.ptr) {}
 
@@ -485,7 +476,7 @@ public:
     }
   };
 
-  map() : length(0) {
+  set() : length(0) {
     dummy = (Node *) malloc(sizeof(Node));
     dummy->color = DUMMY;
     dummy->left = nullptr;
@@ -493,62 +484,26 @@ public:
     dummy->parent = nullptr;
   }
 
-  map(const map &other) : map() {
+  set(const set &other) : set() {
     if (other.root()) {
       dummy->setLeft(other.root()->copy());
     }
     length = other.length;
   }
 
-  map &operator=(const map &other) {
+  set &operator=(const set &other) {
     if (this != &other) {
-      this->~map();
-      new(this) map(other);
+      this->~set();
+      new(this) set(other);
     }
     return *this;
   }
 
-  ~map() {
+  ~set() {
     if (root()) {
       root()->clear();
     }
     free(dummy);
-  }
-
-  T &at(const Key &key) {
-    Node *cur = root();
-    while (cur) {
-      if (Compare()(key, cur->key())) {
-        cur = cur->left;
-      } else if (Compare()(cur->key(), key)) {
-        cur = cur->right;
-      } else {
-        return cur->value();
-      }
-    }
-    throw IndexOutOfBound();
-  }
-
-  const T &at(const Key &key) const {
-    Node *cur = root();
-    while (cur) {
-      if (Compare()(key, cur->key())) {
-        cur = cur->left;
-      } else if (Compare()(cur->key(), key)) {
-        cur = cur->right;
-      } else {
-        return cur->value();
-      }
-    }
-    throw IndexOutOfBound();
-  }
-
-  T &operator[](const Key &key) {
-    return insert(value_type(key, T())).first->second;
-  }
-
-  const T &operator[](const Key &key) const {
-    return at(key);
   }
 
   iterator begin() {
@@ -576,7 +531,7 @@ public:
   }
 
   void clear() {
-    *this = map();
+    *this = set();
   }
 
   pair<iterator, bool> insert(const value_type &value) {
@@ -589,7 +544,7 @@ public:
     }
     Node *cur = root();
     while (true) {
-      if (Compare()(value.first, cur->key())) {
+      if (Compare()(value, cur->data)) {
         if (!cur->left) {
           Node *newNode = new Node(value);
           cur->setLeft(newNode);
@@ -598,7 +553,7 @@ public:
           return pair<iterator, bool>(iterator(this, newNode), true);
         }
         cur = cur->left;
-      } else if (Compare()(cur->key(), value.first)) {
+      } else if (Compare()(cur->data, value)) {
         if (!cur->right) {
           Node *newNode = new Node(value);
           cur->setRight(newNode);
@@ -613,66 +568,22 @@ public:
     }
   }
 
-  void erase(iterator pos) {
-    Node *cur = pos.ptr;
-    if (pos.m != this || !cur) {
-      throw InvalidIterator();
-    }
-    if (cur->left && cur->right) {
-      Node *nxt = cur->next();
-      nxt->balanceAndErase();
-      //replace cur with nxt, still delete cur
-      nxt->color = cur->color;
-      nxt->setLeft(cur->left);
-      nxt->setRight(cur->right);
-      cur->replaceWith(nxt);
-    } else {
-      cur->balanceAndErase();
-    }
-    length--;
-    delete cur;
-  }
 
-  size_t count(const Key &key) const {
+  iterator lower_bound(const value_type &value) {
     Node *cur = root();
+    Node *ret = nullptr; // Node to store the result
     while (cur) {
-      if (Compare()(key, cur->key())) {
-        cur = cur->left;
-      } else if (Compare()(cur->key(), key)) {
-        cur = cur->right;
+      if (!Compare()(cur->data, value)) { // cur->data >= value
+        ret = cur; // Update the result
+        cur = cur->left; // Continue searching in the left subtree
       } else {
-        return 1;
+        cur = cur->right; // Continue searching in the right subtree
       }
     }
-    return 0;
-  }
-
-  iterator find(const Key &key) {
-    Node *cur = root();
-    while (cur) {
-      if (Compare()(key, cur->key())) {
-        cur = cur->left;
-      } else if (Compare()(cur->key(), key)) {
-        cur = cur->right;
-      } else {
-        return iterator(this, cur);
-      }
+    if (!ret) {
+      return end();
     }
-    return end();
-  }
-
-  const_iterator find(const Key &key) const {
-    Node *cur = root();
-    while (cur) {
-      if (Compare()(key, cur->key())) {
-        cur = cur->left;
-      } else if (Compare()(cur->key(), key)) {
-        cur = cur->right;
-      } else {
-        return const_iterator(this, cur);
-      }
-    }
-    return cend();
+    return iterator(this, ret);
   }
 };
 

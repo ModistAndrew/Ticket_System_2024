@@ -5,11 +5,10 @@
 #ifndef TICKETSYSTEM2024_TRAIN_HPP
 #define TICKETSYSTEM2024_TRAIN_HPP
 
-#include "PersistentMap.hpp"
-#include "SimpleFile.hpp"
-#include "PersistentSet.hpp"
-#include "Util.hpp"
-#include "SlowPersistentMap.hpp"
+#include "persistent_data_structure/PersistentMap.hpp"
+#include "persistent_data_structure/PersistentSet.hpp"
+#include "file_storage/SimpleFile.hpp"
+#include "util/Util.hpp"
 
 struct Train {
   String20 trainID; //train ID
@@ -244,10 +243,10 @@ struct Line {
 };
 
 namespace Trains {
-  SlowPersistentMap<Train> unreleasedTrainMap("unreleased_train");
-  SlowPersistentMap<Train> releasedTrainMap("released_train");
+  PersistentMap<Train> unreleasedTrainMap("unreleased_train");
+  PersistentMap<Train> releasedTrainMap("released_train");
   PersistentSet<Station> stationMap("station");
-  SimpleFile<TrainInfo, 1000000> trainDataFile("train_data");
+  SimpleFile<TrainInfo, 2000000> trainDataFile("train_data");
   SimpleFile<Seats, 0> seatDataFile("seat_data");
 
   bool addTrain(const TrainInfo &trainInfo) {

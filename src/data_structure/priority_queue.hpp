@@ -1,7 +1,7 @@
 #ifndef TICKETSYSTEM2024_PRIORITY_QUEUE_HPP
 #define TICKETSYSTEM2024_PRIORITY_QUEUE_HPP
 
-#include "Exceptions.hpp"
+#include "../util/Exceptions.hpp"
 
 template<typename T>
 class priority_queue {

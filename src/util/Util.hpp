@@ -11,10 +11,10 @@
 #include <cstring>
 #include <cmath>
 #include "StringParser.hpp"
-#include "map.hpp"
-#include "priority_queue.hpp"
-#include "list.hpp"
-#include "set.hpp"
+#include "../data_structure/map.hpp"
+#include "../data_structure/priority_queue.hpp"
+#include "../data_structure/list.hpp"
+#include "../data_structure/set.hpp"
 
 template<typename T>
 T *lower_bound(T *first, T *last, const T &val) {

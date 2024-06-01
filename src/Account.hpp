@@ -5,8 +5,8 @@
 #ifndef TICKETSYSTEM2024_ACCOUNT_HPP
 #define TICKETSYSTEM2024_ACCOUNT_HPP
 
-#include "Util.hpp"
-#include "SlowPersistentMap.hpp"
+#include "util/Util.hpp"
+#include "persistent_data_structure/PersistentMap.hpp"
 
 struct Account {
   String20 userID;
@@ -31,7 +31,7 @@ struct Account {
 };
 
 namespace AccountStorage {
-  SlowPersistentMap<Account> accountMap("accounts");
+  PersistentMap<Account> accountMap("accounts");
 
   bool empty() {
     return accountMap.empty();

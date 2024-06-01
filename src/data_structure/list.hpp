@@ -1,7 +1,7 @@
 #ifndef TICKETSYSTEM2024_LIST_HPP
 #define TICKETSYSTEM2024_LIST_HPP
 
-#include "Exceptions.hpp"
+#include "../util/Exceptions.hpp"
 
 template<typename T>
 class list {

@@ -2,34 +2,19 @@
 // Created by zjx on 2024/4/22.
 //
 
-#ifndef TICKETSYSTEM2024_PERSISTENT_MULTI_MAP_HPP
-#define TICKETSYSTEM2024_PERSISTENT_MULTI_MAP_HPP
+#ifndef TICKETSYSTEM2024_PERSISTENT_MAP_HPP
+#define TICKETSYSTEM2024_PERSISTENT_MAP_HPP
 
-#include "Util.hpp"
-#include "FileStorage.hpp"
-#include "SuperFileStorage.hpp"
+#include "../util/Util.hpp"
+#include "../file_storage/FileStorage.hpp"
+#include "../file_storage/SuperFileStorage.hpp"
 
-template<typename T0>
-class PersistentMultiMap {
-  //use T0+int as key and value. new elements are always inserted at end or first
-  //if you want other order, use persistent set instead
+template<typename T>
+class PersistentMap { //use T::index as key
   struct TreeNode;
   struct LeafNode;
 
-  struct INDEX {
-    T0::INDEX index;
-    int tick;
-    auto operator<=>(const INDEX &rhs) const = default;
-  };
-
-  struct T {
-    T0 val;
-    int tick;
-
-    INDEX index() const {
-      return {val.index(), tick};
-    }
-  };
+  typedef T::INDEX INDEX;
 
   static constexpr int SIZE_1 = 2048 / sizeof(T) * 2;
   static constexpr int SIZE_2 = 2048 / sizeof(INDEX) * 2;
@@ -38,7 +23,7 @@ class PersistentMultiMap {
   static_assert(SIZE_2 >= 4 && SIZE_2 % 2 == 0, "SIZE_2 must be even and at least 4");
 
   class iterator {
-    PersistentMultiMap *set;
+    PersistentMap *set;
     int leafPos;
     int pos;
     LeafNode *leaf;
@@ -46,7 +31,7 @@ class PersistentMultiMap {
   public:
     iterator() = default;
 
-    iterator(PersistentMultiMap *set, int leafPos, int pos) : set(set), leafPos(leafPos), pos(pos),
+    iterator(PersistentMap *set, int leafPos, int pos) : set(set), leafPos(leafPos), pos(pos),
                                                               leaf(set->getPtr(leafPos, false).leafNode()) {}
 
     iterator &operator++() {
@@ -118,7 +103,7 @@ class PersistentMultiMap {
       return static_cast<LeafNode *>(ptr);
     }
 
-    bool insert(PersistentMultiMap *set, const T &val, TreeNode *parent, int parentPos) {
+    bool insert(PersistentMap *set, const T &val, TreeNode *parent, int parentPos) {
       if (isLeaf) {
         return leafNode()->insert(set, val, parent, parentPos);
       } else {
@@ -126,7 +111,7 @@ class PersistentMultiMap {
       }
     }
 
-    bool erase(PersistentMultiMap *set, const INDEX &val, TreeNode *parent, int parentPos) {
+    bool erase(PersistentMap *set, const INDEX &val, TreeNode *parent, int parentPos) {
       if (isLeaf) {
         return leafNode()->erase(set, val, parent, parentPos);
       } else {
@@ -134,7 +119,7 @@ class PersistentMultiMap {
       }
     }
 
-    iterator find(PersistentMultiMap *set, const INDEX &val, int loc) {
+    iterator find(PersistentMap *set, const INDEX &val, int loc) {
       if (isLeaf) {
         return leafNode()->find(set, val, loc);
       } else {
@@ -148,12 +133,12 @@ class PersistentMultiMap {
     INDEX index[SIZE_1 - 1];
     int children[SIZE_1];
 
-    iterator find(PersistentMultiMap *set, const INDEX &val, int loc) { //find first no less than val
+    iterator find(PersistentMap *set, const INDEX &val, int loc) { //find first no less than val
       int p = upper_bound(index, index + size - 1, val) - index;
       return set->getPtr(children[p], false).find(set, val, children[p]);
     }
 
-    bool insert(PersistentMultiMap *set, const T &val, TreeNode *parent, int pos) { //insert val into this node
+    bool insert(PersistentMap *set, const T &val, TreeNode *parent, int pos) { //insert val into this node
       int p = upper_bound(index, index + size - 1, val.index()) - index;
       NodePtr child = set->getPtr(children[p], true);
       if (child.insert(set, val, this, p)) {
@@ -165,7 +150,7 @@ class PersistentMultiMap {
       return false;
     }
 
-    bool erase(PersistentMultiMap *set, const INDEX &val, TreeNode *parent, int pos) { //erase val from this node
+    bool erase(PersistentMap *set, const INDEX &val, TreeNode *parent, int pos) { //erase val from this node
       int p = upper_bound(index, index + size - 1, val) - index;
       NodePtr child = set->getPtr(children[p], true);
       if (child.erase(set, val, this, p)) {
@@ -196,7 +181,7 @@ class PersistentMultiMap {
       size--;
     }
 
-    void postInsert(PersistentMultiMap *set, TreeNode *parent, int pos) { //when size==SIZE
+    void postInsert(PersistentMap *set, TreeNode *parent, int pos) { //when size==SIZE
       TreeNode newNode;
       int half = size / 2;
       newNode.size = half;
@@ -206,7 +191,7 @@ class PersistentMultiMap {
       parent->insertChild(set->add(newNode), index[half - 1], pos);
     }
 
-    void postErase(PersistentMultiMap *set, TreeNode *parent, int pos) { //when size==SIZE/2-1
+    void postErase(PersistentMap *set, TreeNode *parent, int pos) { //when size==SIZE/2-1
       if (parent->size == 1) { //root
         return;
       }
@@ -239,7 +224,7 @@ class PersistentMultiMap {
       }
     }
 
-    void merge(PersistentMultiMap *set, TreeNode *sibling, TreeNode *parent, int pos) { //sibling is parent->children[pos+1]
+    void merge(PersistentMap *set, TreeNode *sibling, TreeNode *parent, int pos) { //sibling is parent->children[pos+1]
       memcpy(index + size - 1, parent->index + pos, sizeof(INDEX));
       memcpy(index + size, sibling->index, (sibling->size - 1) * sizeof(INDEX));
       memcpy(children + size, sibling->children, sibling->size * sizeof(int));
@@ -254,12 +239,12 @@ class PersistentMultiMap {
     T data[SIZE_2];
     int next = -1; //linked list
 
-    iterator find(PersistentMultiMap *set, const INDEX &val, int loc) { //find first no less than val
+    iterator find(PersistentMap *set, const INDEX &val, int loc) { //find first no less than val
       int p = lower_index_bound(data, data + size, val) - data;
       return p == size ? iterator(set, next, 0) : iterator(set, loc, p);
     }
 
-    bool insert(PersistentMultiMap *set, const T &val, TreeNode *parent, int pos) { //insert val into this node
+    bool insert(PersistentMap *set, const T &val, TreeNode *parent, int pos) { //insert val into this node
       int p = lower_index_bound(data, data + size, val.index()) - data;
       if (p < size && data[p].index() == val.index()) {
         return false;
@@ -273,7 +258,7 @@ class PersistentMultiMap {
       return true;
     }
 
-    bool erase(PersistentMultiMap *set, const INDEX &val, TreeNode *parent, int pos) { //erase val from this node
+    bool erase(PersistentMap *set, const INDEX &val, TreeNode *parent, int pos) { //erase val from this node
       int p = lower_index_bound(data, data + size, val) - data;
       if (p >= size || data[p].index() != val) {
         return false;
@@ -286,7 +271,7 @@ class PersistentMultiMap {
       return true;
     }
 
-    void postInsert(PersistentMultiMap *set, TreeNode *parent, int pos) { //when size==SIZE
+    void postInsert(PersistentMap *set, TreeNode *parent, int pos) { //when size==SIZE
       LeafNode newNode;
       int half = size / 2;
       newNode.size = half;
@@ -297,7 +282,7 @@ class PersistentMultiMap {
       parent->insertChild(next, data[half].index(), pos);
     }
 
-    void postErase(PersistentMultiMap *set, TreeNode *parent, int pos) { //when size==SIZE/2-1
+    void postErase(PersistentMap *set, TreeNode *parent, int pos) { //when size==SIZE/2-1
       if (parent->size == 1) { //root
         return;
       }
@@ -326,7 +311,7 @@ class PersistentMultiMap {
       }
     }
 
-    void merge(PersistentMultiMap *set, LeafNode *sibling, TreeNode *parent, int pos) { //sibling is parent->children[pos+1]
+    void merge(PersistentMap *set, LeafNode *sibling, TreeNode *parent, int pos) { //sibling is parent->children[pos+1]
       memcpy(data + size, sibling->data, sibling->size * sizeof(T));
       size += sibling->size;
       next = sibling->next;
@@ -337,7 +322,7 @@ class PersistentMultiMap {
 
   TreeNode dummy; //there is a fake tree node which always points to the root
   SuperFileStorage<TreeNode, int> treeNodeStorage; //int is the index of the root
-  FileStorage<LeafNode, int> leafNodeStorage; //int is total
+  FileStorage<LeafNode, int> leafNodeStorage; //int is the size
 
   NodePtr getPtr(int index, bool dirty) {
     if (index == -1) {
@@ -370,57 +355,43 @@ class PersistentMultiMap {
   }
 
 public:
-  int total;
-  explicit PersistentMultiMap(std::string file_name) : treeNodeStorage(-1, file_name + "_tree"),
-                                                       leafNodeStorage(0, file_name + "_leaf") {
+  int length;
+  explicit PersistentMap(std::string file_name) : treeNodeStorage(-1, file_name + "_tree"),
+                                                  leafNodeStorage(0, file_name + "_leaf") {
     dummy.size = 1;
     dummy.children[0] = treeNodeStorage.info == -1 ? add(LeafNode()) : treeNodeStorage.info;
-    total = leafNodeStorage.info;
+    length = leafNodeStorage.info;
   }
 
   void checkCache() {
     leafNodeStorage.checkCache();
   }
 
-  ~PersistentMultiMap() {
+  bool empty() {
+    return length == 0;
+  }
+
+  ~PersistentMap() {
     treeNodeStorage.info = dummy.children[0];
-    leafNodeStorage.info = total;
+    leafNodeStorage.info = length;
   }
 
-  int pushBack(const T0 &val) {
-    int ret = total;
-    total++;
-    if(total <= 0) {
-      throw;
-    }
-    getRoot().insert(this, {val, ret}, &dummy, 0);
+  bool insert(const T &val) {
+    bool ret = getRoot().insert(this, val, &dummy, 0);
     if (dummy.size == 2) {
       TreeNode newRoot;
       newRoot.size = 1;
       newRoot.children[0] = add(dummy);
       dummy = newRoot;
     }
-    return ret;
-  }
-
-  int pushFront(const T0 &val) {
-    int ret = -total;
-    total++;
-    if(total <= 0) {
-      throw;
-    }
-    getRoot().insert(this, {val, ret}, &dummy, 0);
-    if (dummy.size == 2) {
-      TreeNode newRoot;
-      newRoot.size = 1;
-      newRoot.children[0] = add(dummy);
-      dummy = newRoot;
+    if(ret) {
+      length++;
     }
     return ret;
   }
 
-  bool erase(const T0::INDEX &val, int tick) {
-    bool ret = getRoot().erase(this, {val, tick}, &dummy, 0);
+  bool erase(const INDEX &val) {
+    bool ret = getRoot().erase(this, val, &dummy, 0);
     NodePtr root = getRoot();
     if (!root.isLeaf) {
       TreeNode rootNode = *root.treeNode();
@@ -429,16 +400,15 @@ public:
         dummy = rootNode;
       }
     }
+    if(ret) {
+      length--;
+    }
     return ret;
   }
 
-  iterator find(const T0::INDEX &val) { //find the first element no less than val
-    return getRoot().find(this, {val, INT32_MIN}, dummy.children[0]);
-  }
-  
-  Optional<iterator> get(const T0::INDEX &val, int tick) {
-    iterator it = getRoot().find(this, {val, tick}, dummy.children[0]);
-    return (!it.end() && it->val.index() == val && it->tick == tick) ? Optional<iterator>(it) : Optional<iterator>();
+  Optional<iterator> get(const INDEX &val) { //return the iterator first no less than val and whether it equals val
+    iterator it = getRoot().find(this, val, dummy.children[0]);
+    return (!it.end() && it->index() == val) ? Optional<iterator>(it) : Optional<iterator>();
   }
 };
 
