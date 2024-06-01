@@ -256,7 +256,7 @@ namespace Trains {
   PersistentMap<Train> unreleasedTrainMap("unreleased_train");
   PersistentMap<Train> releasedTrainMap("released_train");
   PersistentSet<Station> stationMap("station");
-  SuperFileBlock<TrainInfo, 10000, 6800> trainDataFile("train_data");
+  SuperFileBlock<TrainInfo, 10000, 6500> trainDataFile("train_data");
   FileStorage<Seats, int, 0> seatDataFile(0, "seat_data");
 
   bool addTrain(const TrainInfo &trainInfo) {
