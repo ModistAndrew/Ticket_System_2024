@@ -1,5 +1,5 @@
-#ifndef TICKETSYSTEM2024_CACHED_FILE_STORAGE_HPP
-#define TICKETSYSTEM2024_CACHED_FILE_STORAGE_HPP
+#ifndef TICKETSYSTEM2024_SUPER_FILE_STORAGE_HPP
+#define TICKETSYSTEM2024_SUPER_FILE_STORAGE_HPP
 
 #include <fstream>
 #include <filesystem>
@@ -11,7 +11,7 @@ using std::ifstream;
 using std::ofstream;
 
 template<class T, class INFO, int MAX_SIZE = 1000>
-class CachedFileStorage {
+class SuperFileStorage {
   struct Cache {
     T data;
     bool dirty = false;
@@ -44,14 +44,14 @@ class CachedFileStorage {
 public:
   INFO info;
 
-  CachedFileStorage(const INFO &initInfo, const string &file_name) : fileName("storage/" + file_name + ".dat") {
+  SuperFileStorage(const INFO &initInfo, const string &file_name) : fileName("storage/" + file_name + ".dat") {
     newFile(initInfo);
     file.open(fileName, std::ios::in | std::ios::out | std::ios::binary);
     file.read(reinterpret_cast<char *>(&info), INFO_SIZE);
     file.read(reinterpret_cast<char *>(&empty), INT_SIZE);
   }
 
-  ~CachedFileStorage() {
+  ~SuperFileStorage() {
     file.seekp(0);
     file.write(reinterpret_cast<const char *>(&info), INFO_SIZE);
     file.write(reinterpret_cast<const char *>(&empty), INT_SIZE);

@@ -7,7 +7,7 @@
 
 #include "Util.hpp"
 #include "FileStorage.hpp"
-#include "CachedFileStorage.hpp"
+#include "SuperFileStorage.hpp"
 
 template<typename T0>
 class PersistentMultiMap {
@@ -336,7 +336,7 @@ class PersistentMultiMap {
   };
 
   TreeNode dummy; //there is a fake tree node which always points to the root
-  CachedFileStorage<TreeNode, int> treeNodeStorage; //int is the index of the root
+  SuperFileStorage<TreeNode, int> treeNodeStorage; //int is the index of the root
   FileStorage<LeafNode, int> leafNodeStorage; //int is total
 
   NodePtr getPtr(int index, bool dirty) {

@@ -9,6 +9,7 @@
 #include "SimpleFile.hpp"
 #include "PersistentSet.hpp"
 #include "Util.hpp"
+#include "SlowPersistentMap.hpp"
 
 struct Train {
   String20 trainID; //train ID
@@ -243,8 +244,8 @@ struct Line {
 };
 
 namespace Trains {
-  PersistentMap<Train> unreleasedTrainMap("unreleased_train");
-  PersistentMap<Train> releasedTrainMap("released_train");
+  SlowPersistentMap<Train> unreleasedTrainMap("unreleased_train");
+  SlowPersistentMap<Train> releasedTrainMap("released_train");
   PersistentSet<Station> stationMap("station");
   SimpleFile<TrainInfo, 1000000> trainDataFile("train_data");
   SimpleFile<Seats, 0> seatDataFile("seat_data");

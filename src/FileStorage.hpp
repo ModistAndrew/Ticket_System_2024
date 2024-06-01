@@ -10,7 +10,7 @@ using std::fstream;
 using std::ifstream;
 using std::ofstream;
 
-template<class T, class INFO>
+template<class T, class INFO, int CACHE_SIZE = 0>
 class FileStorage {
   struct Cache {
     T data;
@@ -53,13 +53,15 @@ public:
   }
 
   void checkCache() {
-    for(const auto &it : cacheMap) {
-      if(it.second.dirty) {
-        file.seekp(it.first);
-        file.write(reinterpret_cast<const char *>(&it.second.data), T_SIZE);
+    if(T_SIZE * cacheMap.size() > CACHE_SIZE) {
+      for(const auto &it : cacheMap) {
+        if(it.second.dirty) {
+          file.seekp(it.first);
+          file.write(reinterpret_cast<const char *>(&it.second.data), T_SIZE);
+        }
       }
+      cacheMap.clear();
     }
-    cacheMap.clear();
   }
 
   void newFile(const INFO &initInfo) {

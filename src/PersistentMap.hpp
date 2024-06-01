@@ -7,7 +7,7 @@
 
 #include "Util.hpp"
 #include "FileStorage.hpp"
-#include "CachedFileStorage.hpp"
+#include "SuperFileStorage.hpp"
 
 template<typename T>
 class PersistentMap { //use T::index as key
@@ -321,7 +321,7 @@ class PersistentMap { //use T::index as key
   };
 
   TreeNode dummy; //there is a fake tree node which always points to the root
-  CachedFileStorage<TreeNode, int> treeNodeStorage; //int is the index of the root
+  SuperFileStorage<TreeNode, int> treeNodeStorage; //int is the index of the root
   FileStorage<LeafNode, int> leafNodeStorage; //int is the size
 
   NodePtr getPtr(int index, bool dirty) {
