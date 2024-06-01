@@ -10,7 +10,9 @@ using std::fstream;
 using std::ifstream;
 using std::ofstream;
 
-template<class T, class INFO, int MAX_SIZE = 1000>
+//file storage which saves all data in cache
+//use linear cache. for big cache size.
+template<class T, class INFO, int MAX_SIZE>
 class SuperFileStorage {
   struct Cache {
     T data;
@@ -92,17 +94,20 @@ public:
     file.seekp(loc);
     file.write(reinterpret_cast<const char *>(&t), T_SIZE);
     setEmpty(nxt);
-    if(getIndex(loc) >= MAX_SIZE) {
+    int index = getIndex(loc);
+    if(index < MAX_SIZE) {
+      cacheMap[index] = new Cache();
+      cacheMap[index]->data = t;
+    } else {
       throw FileSizeExceeded();
     }
-    return loc;
+    return index;
   }
 
-  T *get(int loc, bool dirty) {
-    int index = getIndex(loc);
+  T *get(int index, bool dirty) {
     if(!cacheMap[index]) {
       cacheMap[index] = new Cache();
-      file.seekg(loc);
+      file.seekg(getLoc(index));
       file.read(reinterpret_cast<char *>(&cacheMap[index]->data), T_SIZE);
     }
     if(dirty) {
@@ -111,13 +116,13 @@ public:
     return &cacheMap[index]->data;
   }
 
-  void remove(int loc) {
-    int index = getIndex(loc);
+  void remove(int index) {
     if(cacheMap[index]) {
       delete cacheMap[index];
       cacheMap[index] = nullptr;
     }
     int nxt = getEmpty();
+    int loc = getLoc(index);
     setEmpty(loc);
     file.seekp(loc);
     file.write(reinterpret_cast<const char *>(&nxt), INT_SIZE);

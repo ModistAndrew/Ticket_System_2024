@@ -8,6 +8,7 @@
 #include "persistent_data_structure/PersistentMap.hpp"
 #include "persistent_data_structure/PersistentSet.hpp"
 #include "file_storage/SimpleFile.hpp"
+#include "file_storage/FileBlock.hpp"
 #include "util/Util.hpp"
 
 struct Train {
@@ -50,10 +51,25 @@ struct Station {
 };
 
 namespace Trains {
-  extern SimpleFile<Seats, 0> seatDataFile;
+  extern SimpleFile<Seats> seatDataFile;
 }
 
+struct TrainInfoEncode {
+  String20 trainID;
+  int stationNum;
+  int seatNum;
+  String40 stationNames[100];
+  int prices[100];
+  int arrivalTimes[100];
+  int departureTimes[100];
+  int firstStartDate;
+  int totalCount;
+  char type;
+  int seatLoc;
+};
+
 struct TrainInfo {
+  using ENCODE = TrainInfoEncode;
   std::string trainID;
   int stationNum;
   int seatNum;
@@ -78,35 +94,36 @@ struct TrainInfo {
     }
   }
 
-  explicit TrainInfo(const std::string &s) {
-    vector<std::string> v = parseVector(s, ' ', 11);
-    trainID = v[0];
-    stationNum = parseInt(v[1]);
-    seatNum = parseInt(v[2]);
-    stationNames = parseVector(v[3], '|', stationNum);
-    prices = parseIntVector(v[4], '|', stationNum);
-    arrivalTimes = parseIntVector(v[5], '|', stationNum);
-    departureTimes = parseIntVector(v[6], '|', stationNum);
-    firstStartDate = parseInt(v[7]);
-    totalCount = parseInt(v[8]);
-    type = v[9];
-    seatLoc = parseInt(v[10]);
+  explicit TrainInfo(const TrainInfoEncode &encode) :
+    trainID(encode.trainID.toString()), stationNum(encode.stationNum), seatNum(encode.seatNum),
+    firstStartDate(encode.firstStartDate),
+    totalCount(encode.totalCount), type(1, encode.type),
+    stationNames(stationNum), prices(stationNum), arrivalTimes(stationNum), departureTimes(stationNum),
+    seatLoc(encode.seatLoc) {
+    for (int i = 0; i < stationNum; i++) {
+      stationNames[i] = encode.stationNames[i].toString();
+      prices[i] = encode.prices[i];
+      arrivalTimes[i] = encode.arrivalTimes[i];
+      departureTimes[i] = encode.departureTimes[i];
+    }
   }
 
-  std::string toString() const {
-    vector<std::string> v(11);
-    v[0] = trainID;
-    v[1] = toStringInt(stationNum);
-    v[2] = toStringInt(seatNum);
-    v[3] = toStringVector(stationNames, '|', stationNum);
-    v[4] = toStringIntVector(prices, '|', stationNum);
-    v[5] = toStringIntVector(arrivalTimes, '|', stationNum);
-    v[6] = toStringIntVector(departureTimes, '|', stationNum);
-    v[7] = toStringInt(firstStartDate);
-    v[8] = toStringInt(totalCount);
-    v[9] = type;
-    v[10] = toStringInt(seatLoc);
-    return toStringVector(v, ' ', 11);
+  TrainInfoEncode encode() const {
+    TrainInfoEncode ret;
+    ret.trainID = trainID;
+    ret.stationNum = stationNum;
+    ret.seatNum = seatNum;
+    for (int i = 0; i < stationNum; i++) {
+      ret.stationNames[i] = stationNames[i];
+      ret.prices[i] = prices[i];
+      ret.arrivalTimes[i] = arrivalTimes[i];
+      ret.departureTimes[i] = departureTimes[i];
+    }
+    ret.firstStartDate = firstStartDate;
+    ret.totalCount = totalCount;
+    ret.type = type[0];
+    ret.seatLoc = seatLoc;
+    return ret;
   }
 
   int toTrainNum(int startDate) const {
@@ -246,8 +263,8 @@ namespace Trains {
   PersistentMap<Train> unreleasedTrainMap("unreleased_train");
   PersistentMap<Train> releasedTrainMap("released_train");
   PersistentSet<Station> stationMap("station");
-  SimpleFile<TrainInfo, 3000000> trainDataFile("train_data");
-  SimpleFile<Seats, 0> seatDataFile("seat_data");
+  FileBlock<TrainInfo, 10000, 10000> trainDataFile("train_data");
+  SimpleFile<Seats> seatDataFile("seat_data");
 
   bool addTrain(const TrainInfo &trainInfo) {
     String20 index = trainInfo.trainID;

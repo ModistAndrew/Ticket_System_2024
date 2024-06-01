@@ -10,7 +10,8 @@ using std::fstream;
 using std::ifstream;
 using std::ofstream;
 
-template<class T, class INFO, int CACHE_SIZE = 0>
+//file storage with map cache. for small cache size.
+template<class T, class INFO, int CACHE_SIZE>
 class FileStorage {
   struct Cache {
     T data;
@@ -31,7 +32,6 @@ class FileStorage {
   void setEmpty(int x) {
     empty = x;
   }
-
   //store pointer to first empty just after info len.
   //empty except end has pointer to next empty; check EOF to determine whether at end. (so don't store anything after this)
 public:

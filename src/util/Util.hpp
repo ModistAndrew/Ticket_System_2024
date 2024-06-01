@@ -11,8 +11,7 @@
 #include <cstring>
 #include <cmath>
 #include "StringParser.hpp"
-#include <map>
-using std::map;
+#include "../data_structure/map.hpp"
 #include "../data_structure/priority_queue.hpp"
 #include "../data_structure/list.hpp"
 #include "../data_structure/set.hpp"
@@ -108,6 +107,17 @@ template<int L>
 class FixedString { // Fixed length string with max length L
   char key[L];
 public:
+  std::string toString() const {
+    std::string ret;
+    for (int i = 0; i < L; i++) {
+      if (key[i] == '\0') {
+        break;
+      }
+      ret.push_back(key[i]);
+    }
+    return ret;
+  }
+
   FixedString(const std::string &s) : key{} { //use implicit conversion
     if (s.length() > L) {
       throw;

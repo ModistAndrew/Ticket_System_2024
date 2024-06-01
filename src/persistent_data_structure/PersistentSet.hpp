@@ -9,7 +9,7 @@
 #include "../file_storage/FileStorage.hpp"
 #include "../file_storage/SuperFileStorage.hpp"
 
-template<typename T>
+template<typename T, int MAX_TREE_SIZE = 1000>
 class PersistentSet { //use T as key
   struct TreeNode;
   struct LeafNode;
@@ -307,8 +307,8 @@ class PersistentSet { //use T as key
   };
 
   TreeNode dummy; //there is a fake tree node which always points to the root
-  SuperFileStorage<TreeNode, int> treeNodeStorage; //int is the index of the root
-  FileStorage<LeafNode, int> leafNodeStorage;
+  SuperFileStorage<TreeNode, int, MAX_TREE_SIZE> treeNodeStorage; //int is the index of the root
+  FileStorage<LeafNode, int, 0> leafNodeStorage;
 
   NodePtr getPtr(int index, bool dirty) {
     if (index == -1) {
