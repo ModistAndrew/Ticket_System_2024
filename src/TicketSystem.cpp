@@ -16,8 +16,6 @@ void checkCache() {
 }
 
 int main() {
-//  freopen("testcases/basic_4/8.in", "r", stdin);
-//  freopen("test.out", "w", stdout);
   std::ios::sync_with_stdio(false);
   std::cin.tie(nullptr);
   std::cout.tie(nullptr);

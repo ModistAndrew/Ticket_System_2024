@@ -64,7 +64,7 @@ struct TrainInfo {
   int firstStartDate;
   int totalCount; //total number of trains. from startDate to startDate + totalDate - 1
   std::string type; //type of the train
-  vector<int> seatLoc; //seats[i] points to the start of the seat info of train i. size == totalCount
+  int seatLoc; //points to the start of the seat info of train 0. step = 6 * stationNum + 1
 
   TrainInfo() = default;
 
@@ -72,9 +72,9 @@ struct TrainInfo {
     trainID(std::move(trainID)), stationNum(stationNum), seatNum(seatNum), firstStartDate(firstStartDate),
     totalCount(totalCount), type(std::move(type)),
     stationNames(stationNum), prices(stationNum), arrivalTimes(stationNum), departureTimes(stationNum),
-    seatLoc(totalCount) {
-    for (int i = 0; i < totalCount; i++) {
-      seatLoc[i] = Trains::seatDataFile.write(Seats(stationNum, seatNum));
+    seatLoc(Trains::seatDataFile.write(Seats(stationNum, seatNum))) {
+    for (int i = 1; i < totalCount; i++) {
+      Trains::seatDataFile.write(Seats(stationNum, seatNum));
     }
   }
 
@@ -90,7 +90,7 @@ struct TrainInfo {
     firstStartDate = parseInt(v[7]);
     totalCount = parseInt(v[8]);
     type = v[9];
-    seatLoc = parseIntVector(v[10], '|', totalCount);
+    seatLoc = parseInt(v[10]);
   }
 
   std::string toString() const {
@@ -105,7 +105,7 @@ struct TrainInfo {
     v[7] = toStringInt(firstStartDate);
     v[8] = toStringInt(totalCount);
     v[9] = type;
-    v[10] = toStringIntVector(seatLoc, '|', totalCount);
+    v[10] = toStringInt(seatLoc);
     return toStringVector(v, ' ', 11);
   }
 
@@ -153,7 +153,7 @@ struct TrainInfo {
   }
 
   Seats *getSeats(int trainNum, bool dirty) const {
-    return Trains::seatDataFile.get(seatLoc[trainNum], dirty);
+    return Trains::seatDataFile.get(seatLoc + (6 * stationNum + 1) * trainNum, dirty);
   }
 
   int getSeat(int trainNum, int stationIndex) const {
@@ -332,6 +332,7 @@ namespace Trains {
     int fromTrain;
     int fromIndex;
     int intersectionIndexFrom;
+
     auto operator<=>(const TrainStationInfo &rhs) const = default;
   };
 
@@ -340,12 +341,14 @@ namespace Trains {
     auto it1 = stationMap.find({from, 0, 0});
     auto it2 = stationMap.find({to, 0, 0});
     set<TrainStationInfo> stationIndices;
-    list<TrainInfo*> trainFromList;
+    list<TrainInfo *> trainFromList;
     while (!it1.end() && it1->station == from) {
       TrainInfo *trainFrom = trainDataFile.get(it1->trainData, false);
       for (int intersectionIndexFrom = it1->stationNum + 1;
            intersectionIndexFrom < trainFrom->stationNum; intersectionIndexFrom++) {
-        stationIndices.insert({trainFrom->stationNames[intersectionIndexFrom], (int)trainFromList.size(), it1->stationNum, intersectionIndexFrom});
+        stationIndices.insert(
+          {trainFrom->stationNames[intersectionIndexFrom], (int) trainFromList.size(), it1->stationNum,
+           intersectionIndexFrom});
       }
       trainFromList.push_back(trainFrom);
       it1++;
@@ -353,11 +356,12 @@ namespace Trains {
     while (!it2.end() && it2->station == to) {
       TrainInfo *trainTo = trainDataFile.get(it2->trainData, false);
       for (int intersectionIndexTo = 0; intersectionIndexTo < it2->stationNum; intersectionIndexTo++) {
-        const String40& intersection = trainTo->stationNames[intersectionIndexTo];
+        const String40 &intersection = trainTo->stationNames[intersectionIndexTo];
         auto range = stationIndices.lower_bound({intersection, 0, 0, 0});
-        for (auto candidate = range; candidate!=stationIndices.end() && candidate->station == intersection; candidate++) {
+        for (auto candidate = range;
+             candidate != stationIndices.end() && candidate->station == intersection; candidate++) {
           TrainInfo *trainFrom = trainFromList[candidate->fromTrain];
-          if(trainFrom->trainID == trainTo->trainID) {
+          if (trainFrom->trainID == trainTo->trainID) {
             continue;
           }
           int indexFrom = candidate->fromIndex;
