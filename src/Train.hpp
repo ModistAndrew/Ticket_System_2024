@@ -56,14 +56,14 @@ namespace Trains {
 
 struct TrainInfoEncode {
   String20 trainID;
-  int stationNum;
+  short stationNum;
   int seatNum;
-  String40 stationNames[100];
-  int prices[100];
-  int arrivalTimes[100];
-  int departureTimes[100];
-  int firstStartDate;
-  int totalCount;
+  String40 stationNames[30];
+  unsigned short prices[30];
+  short arrivalTimes[30];
+  short departureTimes[30];
+  short firstStartDate;
+  short totalCount;
   char type;
   int seatLoc;
 };
@@ -71,22 +71,22 @@ struct TrainInfoEncode {
 struct TrainInfo {
   using ENCODE = TrainInfoEncode;
   std::string trainID;
-  int stationNum;
+  short stationNum;
   int seatNum;
   vector<std::string> stationNames; //stationName[0] is the start station. size == stationNum
-  vector<int> prices; //prices from start station to station[i]. size == stationNum. 0 for start station
-  vector<int> arrivalTimes; //time from start time to arrival at station[i]. size == stationNum. invalid for start station
-  vector<int> departureTimes; //time from start time to departure from station[i]. size == stationNum. invalid for end station. start time for start station
-  int firstStartDate;
-  int totalCount; //total number of trains. from startDate to startDate + totalDate - 1
-  std::string type; //type of the train
+  vector<unsigned short> prices; //prices from start station to station[i]. size == stationNum. 0 for start station
+  vector<short> arrivalTimes; //time from start time to arrival at station[i]. size == stationNum. invalid for start station
+  vector<short> departureTimes; //time from start time to departure from station[i]. size == stationNum. invalid for end station. start time for start station
+  short firstStartDate;
+  short totalCount; //total number of trains. from startDate to startDate + totalDate - 1
+  char type; //type of the train
   int seatLoc; //points to the start of the seat info of train 0. step = 6 * stationNum + 1
 
   TrainInfo() = default;
 
   TrainInfo(std::string trainID, int stationNum, int seatNum, int firstStartDate, int totalCount, std::string type) :
     trainID(std::move(trainID)), stationNum(stationNum), seatNum(seatNum), firstStartDate(firstStartDate),
-    totalCount(totalCount), type(std::move(type)),
+    totalCount(totalCount), type(type[0]),
     stationNames(stationNum), prices(stationNum), arrivalTimes(stationNum), departureTimes(stationNum),
     seatLoc(Trains::seatDataFile.write(Seats(stationNum, seatNum))) {
     for (int i = 1; i < totalCount; i++) {
@@ -97,7 +97,7 @@ struct TrainInfo {
   explicit TrainInfo(const TrainInfoEncode &encode) :
     trainID(encode.trainID.toString()), stationNum(encode.stationNum), seatNum(encode.seatNum),
     firstStartDate(encode.firstStartDate),
-    totalCount(encode.totalCount), type(1, encode.type),
+    totalCount(encode.totalCount), type(encode.type),
     stationNames(stationNum), prices(stationNum), arrivalTimes(stationNum), departureTimes(stationNum),
     seatLoc(encode.seatLoc) {
     for (int i = 0; i < stationNum; i++) {
@@ -121,7 +121,7 @@ struct TrainInfo {
     }
     ret.firstStartDate = firstStartDate;
     ret.totalCount = totalCount;
-    ret.type = type[0];
+    ret.type = type;
     ret.seatLoc = seatLoc;
     return ret;
   }
@@ -263,7 +263,7 @@ namespace Trains {
   PersistentMap<Train> unreleasedTrainMap("unreleased_train");
   PersistentMap<Train> releasedTrainMap("released_train");
   PersistentSet<Station> stationMap("station");
-  FileBlock<TrainInfo, 10000, 5000> trainDataFile("train_data");
+  FileBlock<TrainInfo, 10000, 10000> trainDataFile("train_data");
   SimpleFile<Seats> seatDataFile("seat_data");
 
   bool addTrain(const TrainInfo &trainInfo) {
