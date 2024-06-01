@@ -7,8 +7,9 @@
 
 #include "Util.hpp"
 #include "FileStorage.hpp"
+#include "CachedFileStorage.hpp"
 
-template<typename T0, int CACHE_SIZE>
+template<typename T0>
 class PersistentMultiMap {
   //use T0+int as key and value. new elements are always inserted at end or first
   //if you want other order, use persistent set instead
@@ -335,8 +336,8 @@ class PersistentMultiMap {
   };
 
   TreeNode dummy; //there is a fake tree node which always points to the root
-  FileStorage<TreeNode, int, CACHE_SIZE> treeNodeStorage; //int is the index of the root
-  FileStorage<LeafNode, int, 0> leafNodeStorage; //int is the size
+  CachedFileStorage<TreeNode, int> treeNodeStorage; //int is the index of the root
+  FileStorage<LeafNode, int> leafNodeStorage; //int is total
 
   NodePtr getPtr(int index, bool dirty) {
     if (index == -1) {
@@ -378,7 +379,6 @@ public:
   }
 
   void checkCache() {
-    treeNodeStorage.checkCache();
     leafNodeStorage.checkCache();
   }
 

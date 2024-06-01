@@ -7,8 +7,9 @@
 
 #include "Util.hpp"
 #include "FileStorage.hpp"
+#include "CachedFileStorage.hpp"
 
-template<typename T, int CACHE_SIZE>
+template<typename T>
 class PersistentMap { //use T::index as key
   struct TreeNode;
   struct LeafNode;
@@ -320,8 +321,8 @@ class PersistentMap { //use T::index as key
   };
 
   TreeNode dummy; //there is a fake tree node which always points to the root
-  FileStorage<TreeNode, int, CACHE_SIZE> treeNodeStorage; //int is the index of the root
-  FileStorage<LeafNode, int, 0> leafNodeStorage; //int is the size
+  CachedFileStorage<TreeNode, int> treeNodeStorage; //int is the index of the root
+  FileStorage<LeafNode, int> leafNodeStorage; //int is the size
 
   NodePtr getPtr(int index, bool dirty) {
     if (index == -1) {
@@ -363,7 +364,6 @@ public:
   }
 
   void checkCache() {
-    treeNodeStorage.checkCache();
     leafNodeStorage.checkCache();
   }
 

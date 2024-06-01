@@ -294,6 +294,11 @@ namespace Commands {
     Command command(s);
     auto it = commandMap.find(command.name);
     std::cout << command.timestamp << ' ';
+
+    if(command.timestamp == "[7567]") {
+      std::cerr << "haha";
+    }
+
     if (it == commandMap.end()) {
       return "-1";
     }

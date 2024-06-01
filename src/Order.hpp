@@ -56,8 +56,8 @@ struct OrderQueue {
 };
 
 namespace Orders {
-  PersistentMultiMap<Order, 1000000> orderMap("order");
-  PersistentMultiMap<OrderQueue, 1000000> orderQueueMap("order_queue");
+  PersistentMultiMap<Order> orderMap("order");
+  PersistentMultiMap<OrderQueue> orderQueueMap("order_queue");
 
   void addOrder(Order &order) { //success or pending
     int tick = orderMap.pushFront(order);
